@@ -1,28 +1,9 @@
 "use client";
 
-import { useAuth } from "@/lib/auth";
 import { TopNav } from "@/components/app/top-nav";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
+// TEMP: auth gate disabled for dev browsing. Re-enable before shipping.
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !user) router.push("/login");
-  }, [isLoading, user, router]);
-
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="size-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (!user) return null;
-
   return (
     <div className="flex h-full flex-col">
       <TopNav />

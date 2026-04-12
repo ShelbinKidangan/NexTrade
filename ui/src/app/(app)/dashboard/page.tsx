@@ -26,14 +26,14 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
-        <Button asChild>
-          <Link href="/catalog/new"><Plus className="size-4" /> Add Product</Link>
+        <Button render={<Link href="/catalog/new" />}>
+          <Plus className="size-4" /> Add Product
         </Button>
-        <Button variant="outline" asChild>
-          <Link href="/rfqs"><FileText className="size-4" /> Create RFQ</Link>
+        <Button variant="outline" render={<Link href="/rfqs" />}>
+          <FileText className="size-4" /> Create RFQ
         </Button>
-        <Button variant="outline" asChild>
-          <Link href="/discover"><Search className="size-4" /> Discover Businesses</Link>
+        <Button variant="outline" render={<Link href="/discover" />}>
+          <Search className="size-4" /> Discover Businesses
         </Button>
       </div>
 

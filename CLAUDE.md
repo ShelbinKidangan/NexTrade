@@ -75,7 +75,18 @@ cd ui
 npm run dev     # next dev
 npm run build   # next build
 npm run lint    # eslint
+
+# Docker — production-style stack (Api + Consumers + Postgres + RabbitMQ + Valkey)
+docker compose -f infra/docker/docker-compose.mvp.yml up -d
+
+# Docker — full stack (adds Azurite blob emulator + Mailhog SMTP dev server)
+docker compose -f infra/docker/docker-compose.full.yml up -d
+
+# Docker — DB-only, for running integration tests against real Postgres
+docker compose -f infra/docker/docker-compose.test.yml up -d
 ```
+
+Docker build contexts are the repo root (not each project dir) so the Dockerfiles in [src/NexTrade.Api/Dockerfile](src/NexTrade.Api/Dockerfile) and [src/NexTrade.Consumers/Dockerfile](src/NexTrade.Consumers/Dockerfile) can `COPY` sibling projects. The compose files expect env vars (`DB_USER`, `DB_CONNECTION_STRING`, `JWT_KEY`, etc.) from a `.env` file next to the compose file or the shell environment.
 
 Frontend auth: the UI stores the JWT and attaches it via [ui/src/lib/api.ts](ui/src/lib/api.ts); SignalR connections must pass it through the `access_token` query string, not a header.
 

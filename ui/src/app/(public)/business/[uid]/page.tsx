@@ -32,8 +32,8 @@ export default function BusinessProfilePage({ params }: { params: Promise<{ uid:
     return (
       <div className="mx-auto max-w-[1280px] px-4 py-16 text-center">
         <p className="text-sm text-foreground-secondary">Business not found</p>
-        <Button variant="outline" size="sm" className="mt-4" asChild>
-          <Link href="/discover"><ArrowLeft className="size-4" /> Back to Discover</Link>
+        <Button variant="outline" size="sm" className="mt-4" render={<Link href="/discover" />}>
+          <ArrowLeft className="size-4" /> Back to Discover
         </Button>
       </div>
     );

@@ -1,0 +1,128 @@
+# NexTrade Full Stack
+# Target state — mirrors mvp today, carved out for future add-ons
+# (e.g. Azure Blob via Azurite, SMTP dev server, OpenTelemetry collector).
+#
+# Usage:
+#   docker compose -f docker-compose.full.yml up -d
+
+services:
+
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: nextrade
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d nextrade"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    image: valkey/valkey:9
+    restart: unless-stopped
+    volumes:
+      - valkey_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: nextrade/api:${IMAGE_TAG:-latest}
+    build:
+      context: ../../
+      dockerfile: src/NexTrade.Api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__nextrade-db: ${DB_CONNECTION_STRING}
+      ConnectionStrings__rabbitmq: ${RABBITMQ_CONNECTION_STRING}
+      ConnectionStrings__valkey: ${VALKEY_CONNECTION_STRING}
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: ${JWT_ISSUER:-NexTrade}
+      Jwt__Audience: ${JWT_AUDIENCE:-NexTrade}
+      Cors__Origins__0: ${UI_URL:-http://localhost:4000}
+      Storage__ConnectionString: ${BLOB_CONNECTION_STRING}
+      Storage__ContainerName: ${BLOB_CONTAINER:-nextrade}
+      Email__FromAddress: ${EMAIL_FROM:-noreply@nextrade.io}
+      Email__Smtp__Host: mailhog
+      Email__Smtp__Port: 1025
+    ports:
+      - "8080:8080"
+
+  consumers:
+    image: nextrade/consumers:${IMAGE_TAG:-latest}
+    build:
+      context: ../../
+      dockerfile: src/NexTrade.Consumers/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__nextrade-db: ${DB_CONNECTION_STRING}
+      ConnectionStrings__rabbitmq: ${RABBITMQ_CONNECTION_STRING}
+
+  # Azure Blob emulator (matches appsettings "UseDevelopmentStorage=true")
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    restart: unless-stopped
+    command: "azurite-blob --blobHost 0.0.0.0"
+    volumes:
+      - azurite_data:/data
+    ports:
+      - "10000:10000"
+
+  # SMTP dev server for outgoing email (captured in web UI)
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # web UI
+
+volumes:
+  db_data:
+  rabbitmq_data:
+  valkey_data:
+  azurite_data:

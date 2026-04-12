@@ -33,8 +33,8 @@ export default function ConnectionsPage() {
             </div>
             <p className="text-sm text-foreground-secondary">No connections yet</p>
             <p className="text-xs text-foreground-tertiary mt-1">Discover businesses and start building your network.</p>
-            <Button size="sm" className="mt-4" asChild>
-              <Link href="/discover">Discover businesses</Link>
+            <Button size="sm" className="mt-4" render={<Link href="/discover" />}>
+              Discover businesses
             </Button>
           </div>
         </CardContent>

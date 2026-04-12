@@ -2,31 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { authApi } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // TEMP: skips API call, just navigates to dashboard. Restore authApi.login before shipping.
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    try {
-      const res = await authApi.login({ email, password });
-      login(res.token, res.user, res.business);
-    } catch (err: any) {
-      setError(err.message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
+    router.push("/dashboard");
   }
 
   return (

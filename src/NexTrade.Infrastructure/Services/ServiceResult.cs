@@ -2,10 +2,10 @@ namespace NexTrade.Infrastructure.Services;
 
 public class ServiceResult
 {
-    public bool Succeeded { get; private set; }
-    public string? Error { get; private set; }
-    public int StatusCode { get; private set; }
-    public Dictionary<string, string[]>? Errors { get; private set; }
+    public bool Succeeded { get; init; }
+    public string? Error { get; init; }
+    public int StatusCode { get; init; }
+    public Dictionary<string, string[]>? Errors { get; init; }
 
     public static ServiceResult Ok() => new() { Succeeded = true, StatusCode = 200 };
 
@@ -23,7 +23,7 @@ public class ServiceResult<T> : ServiceResult
 {
     public T? Data { get; init; }
 
-    public new static ServiceResult<T> Ok(T data)
+    public static ServiceResult<T> Ok(T data)
         => new() { Succeeded = true, StatusCode = 200, Data = data };
 
     public static ServiceResult<T> Created(T data)

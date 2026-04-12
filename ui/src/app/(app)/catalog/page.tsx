@@ -38,8 +38,8 @@ export default function CatalogPage() {
         <h1 className="text-xl font-semibold">My Catalog</h1>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">AI Import</Button>
-          <Button size="sm" asChild>
-            <Link href="/catalog/new"><Plus className="size-4" /> Add Item</Link>
+          <Button size="sm" render={<Link href="/catalog/new" />}>
+            <Plus className="size-4" /> Add Item
           </Button>
         </div>
       </div>
@@ -74,8 +74,8 @@ export default function CatalogPage() {
             <Package className="size-5 text-foreground-tertiary" />
           </div>
           <p className="text-sm text-foreground-secondary">No catalog items yet</p>
-          <Button size="sm" className="mt-3" asChild>
-            <Link href="/catalog/new">Add your first product</Link>
+          <Button size="sm" className="mt-3" render={<Link href="/catalog/new" />}>
+            Add your first product
           </Button>
         </div>
       ) : (

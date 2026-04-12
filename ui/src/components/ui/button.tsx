@@ -1,5 +1,6 @@
 "use client";
 
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
@@ -29,10 +30,16 @@ const buttonVariants = cva(
 );
 
 function Button({
-  className, variant = "default", size = "default", ...props
-}: React.ComponentProps<"button"> & VariantProps<typeof buttonVariants>) {
+  className, variant = "default", size = "default", nativeButton, render, ...props
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
-    <button className={cn(buttonVariants({ variant, size, className }))} {...props} />
+    <ButtonPrimitive
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      render={render}
+      nativeButton={nativeButton ?? render === undefined}
+      {...props}
+    />
   );
 }
 

@@ -70,8 +70,8 @@ export function BusinessCard({ business }: { business: BusinessDto }) {
 
       {/* Actions */}
       <div className="mt-auto flex gap-2 pt-2 border-t border-border">
-        <Button variant="outline" size="xs" className="flex-1" asChild>
-          <Link href={`/business/${business.uid}`}>View</Link>
+        <Button variant="outline" size="xs" className="flex-1" render={<Link href={`/business/${business.uid}`} />}>
+          View
         </Button>
         <Button size="xs" className="flex-1">Connect</Button>
       </div>

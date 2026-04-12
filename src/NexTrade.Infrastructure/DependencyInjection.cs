@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using NexTrade.Core.Interfaces;
 using NexTrade.Infrastructure.Data;
 using NexTrade.Infrastructure.Repositories;
@@ -12,13 +13,17 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // Database
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(configuration.GetConnectionString("nextrade-db"));
+        dataSourceBuilder.EnableDynamicJson();
+        dataSourceBuilder.UseVector();
+        var dataSource = dataSourceBuilder.Build();
+
         services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("nextrade-db"), npgsql =>
+            options.UseNpgsql(dataSource, npgsql =>
             {
-                npgsql.EnableDynamicJson();
-                npgsql.UseVector();
-            }));
+                npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
+            })
+            .UseSnakeCaseNamingConvention());
 
         // Tenant context
         services.AddScoped<TenantContext>();

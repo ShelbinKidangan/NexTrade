@@ -15,7 +15,6 @@ public class Business : BaseEntity
 
     // Navigation
     public BusinessProfile? Profile { get; set; }
-    public ICollection<User> Users { get; set; } = [];
     public ICollection<CatalogItem> CatalogItems { get; set; } = [];
     public ICollection<ComplianceDocument> ComplianceDocuments { get; set; } = [];
 }
