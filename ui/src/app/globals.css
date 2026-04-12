@@ -160,6 +160,59 @@ summary,
   --chart-5: #E85555;
 }
 
+/* Accent palettes — override the current blue accent family */
+
+:root[data-accent="indigo"] {
+  --accent: #5B5BD6;
+  --accent-hover: #4746B8;
+  --accent-subtle: #ECECFB;
+  --info: #5B5BD6;
+  --info-subtle: #ECECFB;
+  --ring: #5B5BD6;
+}
+.dark[data-accent="indigo"] {
+  --accent: #8B7EF0;
+  --accent-hover: #7B6FE0;
+  --accent-subtle: #232344;
+  --info: #8B7EF0;
+  --info-subtle: #232344;
+  --ring: #8B7EF0;
+}
+
+:root[data-accent="teal"] {
+  --accent: #0D9488;
+  --accent-hover: #0A7268;
+  --accent-subtle: #D8F3EF;
+  --info: #0D9488;
+  --info-subtle: #D8F3EF;
+  --ring: #0D9488;
+}
+.dark[data-accent="teal"] {
+  --accent: #14B8A6;
+  --accent-hover: #0D9488;
+  --accent-subtle: #0F2F2C;
+  --info: #14B8A6;
+  --info-subtle: #0F2F2C;
+  --ring: #14B8A6;
+}
+
+:root[data-accent="warm"] {
+  --accent: #E8741A;
+  --accent-hover: #C25E14;
+  --accent-subtle: #FCE8D4;
+  --info: #E8741A;
+  --info-subtle: #FCE8D4;
+  --ring: #E8741A;
+}
+.dark[data-accent="warm"] {
+  --accent: #F59E42;
+  --accent-hover: #E8741A;
+  --accent-subtle: #3A220C;
+  --info: #F59E42;
+  --info-subtle: #3A220C;
+  --ring: #F59E42;
+}
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }

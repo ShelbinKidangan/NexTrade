@@ -20,7 +20,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.5" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.4.19" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.13.22" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.5" />
   </ItemGroup>
 

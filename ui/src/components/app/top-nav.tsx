@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, MessageSquare, Bell, User, Menu, X } from "lucide-react";
+import { Search, Bell, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
+import { ThemeSwitcher } from "@/components/app/theme-switcher";
 
 const navItems = [
   { label: "Discover", href: "/discover" },
@@ -59,6 +60,7 @@ export function TopNav() {
           <Button variant="ghost" size="icon-sm">
             <Bell className="size-4" />
           </Button>
+          <ThemeSwitcher />
 
           {/* User menu */}
           <div className="hidden md:flex items-center gap-2 pl-2 border-l border-border">
