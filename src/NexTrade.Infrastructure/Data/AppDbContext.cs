@@ -1,0 +1,209 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NexTrade.Core.Entities;
+using NexTrade.Core.Interfaces;
+using NexTrade.Infrastructure.Identity;
+
+namespace NexTrade.Infrastructure.Data;
+
+public class AppDbContext(
+    DbContextOptions<AppDbContext> options,
+    ITenantContext tenantContext) : IdentityDbContext<User, Role, long>(options)
+{
+    private readonly ITenantContext _tenantContext = tenantContext;
+
+    // Business (tenant)
+    public DbSet<Business> Businesses => Set<Business>();
+    public DbSet<BusinessProfile> BusinessProfiles => Set<BusinessProfile>();
+
+    // Catalog
+    public DbSet<CatalogItem> CatalogItems => Set<CatalogItem>();
+    public DbSet<CatalogCategory> CatalogCategories => Set<CatalogCategory>();
+    public DbSet<CatalogMedia> CatalogMedia => Set<CatalogMedia>();
+
+    // RFQ
+    public DbSet<Rfq> Rfqs => Set<Rfq>();
+    public DbSet<RfqItem> RfqItems => Set<RfqItem>();
+    public DbSet<RfqTarget> RfqTargets => Set<RfqTarget>();
+
+    // Quotes
+    public DbSet<Quote> Quotes => Set<Quote>();
+    public DbSet<QuoteItem> QuoteItems => Set<QuoteItem>();
+
+    // Orders
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+
+    // Network
+    public DbSet<Connection> Connections => Set<Connection>();
+    public DbSet<Review> Reviews => Set<Review>();
+
+    // Compliance
+    public DbSet<ComplianceDocument> ComplianceDocuments => Set<ComplianceDocument>();
+
+    // Messaging
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<Message> Messages => Set<Message>();
+
+    // Platform
+    public DbSet<Industry> Industries => Set<Industry>();
+    public DbSet<Country> Countries => Set<Country>();
+    public DbSet<Currency> Currencies => Set<Currency>();
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        // Rename Identity tables to snake_case
+        builder.Entity<User>().ToTable("users");
+        builder.Entity<Role>().ToTable("roles");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserRole<long>>().ToTable("user_roles");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserClaim<long>>().ToTable("user_claims");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserLogin<long>>().ToTable("user_logins");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>>().ToTable("role_claims");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserToken<long>>().ToTable("user_tokens");
+
+        // Global query filters for tenant-scoped entities
+        ApplyTenantFilters(builder);
+
+        // Business
+        builder.Entity<Business>(e =>
+        {
+            e.HasIndex(b => b.Subdomain).IsUnique().HasFilter("subdomain IS NOT NULL");
+            e.HasOne(b => b.Profile).WithOne(p => p.Business).HasForeignKey<BusinessProfile>(p => p.BusinessId);
+        });
+
+        // Catalog
+        builder.Entity<CatalogItem>(e =>
+        {
+            e.Property(c => c.Specifications).HasColumnType("jsonb");
+            e.Property(c => c.DeliveryRegions).HasColumnType("jsonb");
+            e.Property(c => c.Embedding).HasColumnType("vector(1536)");
+            e.HasOne(c => c.Category).WithMany().HasForeignKey(c => c.CategoryId);
+        });
+
+        builder.Entity<CatalogCategory>(e =>
+        {
+            e.HasIndex(c => c.Slug).IsUnique();
+            e.HasOne(c => c.ParentCategory).WithMany(c => c.SubCategories).HasForeignKey(c => c.ParentCategoryId);
+        });
+
+        // RFQ
+        builder.Entity<RfqItem>().Property(r => r.Specifications).HasColumnType("jsonb");
+
+        // Orders
+        builder.Entity<Order>(e =>
+        {
+            e.HasIndex(o => o.OrderNumber).IsUnique();
+        });
+
+        // Network (cross-tenant)
+        builder.Entity<Connection>(e =>
+        {
+            e.HasIndex(c => new { c.RequesterBusinessUid, c.TargetBusinessUid }).IsUnique();
+        });
+
+        builder.Entity<Review>(e =>
+        {
+            e.HasIndex(r => new { r.ReviewerBusinessUid, r.OrderId }).IsUnique().HasFilter("order_id IS NOT NULL");
+        });
+
+        // Conversation
+        builder.Entity<Conversation>(e =>
+        {
+            e.HasIndex(c => new { c.BusinessAUid, c.BusinessBUid, c.ContextType, c.ContextId }).IsUnique();
+        });
+
+        // Industry
+        builder.Entity<Industry>(e =>
+        {
+            e.HasIndex(i => i.Slug).IsUnique();
+            e.HasOne(i => i.Parent).WithMany(i => i.Children).HasForeignKey(i => i.ParentId);
+        });
+
+        // Platform
+        builder.Entity<Country>().HasIndex(c => c.Code).IsUnique();
+        builder.Entity<Currency>().HasIndex(c => c.Code).IsUnique();
+
+        // BusinessProfile JSONB columns
+        builder.Entity<BusinessProfile>(e =>
+        {
+            e.Property(p => p.Capabilities).HasColumnType("jsonb");
+            e.Property(p => p.Certifications).HasColumnType("jsonb");
+            e.Property(p => p.DeliveryRegions).HasColumnType("jsonb");
+        });
+
+        // Enum string conversions
+        foreach (var entityType in builder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType.IsEnum)
+                {
+                    var converterType = typeof(EnumToStringConverter<>).MakeGenericType(property.ClrType);
+                    var converter = (ValueConverter)Activator.CreateInstance(converterType)!;
+                    property.SetValueConverter(converter);
+                }
+            }
+        }
+
+        // Default decimal precision
+        foreach (var property in builder.Model.GetEntityTypes()
+            .SelectMany(t => t.GetProperties())
+            .Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
+        {
+            property.SetPrecision(18);
+            property.SetScale(4);
+        }
+
+        // UTC datetime converter
+        var utcConverter = new ValueConverter<DateTime, DateTime>(
+            v => v.Kind == DateTimeKind.Utc ? v : v.ToUniversalTime(),
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+        foreach (var property in builder.Model.GetEntityTypes()
+            .SelectMany(t => t.GetProperties())
+            .Where(p => p.ClrType == typeof(DateTime) || p.ClrType == typeof(DateTime?)))
+        {
+            property.SetValueConverter(utcConverter);
+        }
+    }
+
+    private void ApplyTenantFilters(ModelBuilder builder)
+    {
+        builder.Entity<CatalogItem>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
+        builder.Entity<Rfq>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
+        builder.Entity<Quote>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
+        builder.Entity<Order>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
+        builder.Entity<ComplianceDocument>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken ct = default)
+    {
+        foreach (var entry in ChangeTracker.Entries<TenantEntity>())
+        {
+            if (entry.State == EntityState.Added)
+            {
+                entry.Entity.TenantId = _tenantContext.TenantId;
+                entry.Entity.CreatedBy = _tenantContext.UserId;
+                entry.Entity.CreatedAt = DateTime.UtcNow;
+            }
+
+            if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedBy = _tenantContext.UserId;
+                entry.Entity.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        return await base.SaveChangesAsync(ct);
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder
+            .UseSnakeCaseNamingConvention();
+    }
+}

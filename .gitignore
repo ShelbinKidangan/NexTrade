@@ -1,0 +1,38 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.vs/
+.vs/
+
+## IDE
+.idea/
+*.swp
+*.sln.docstates
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Environment
+.env
+.env.*
+appsettings.*.local.json
+
+## Node (UI)
+node_modules/
+.next/
+out/
+.turbo/
+
+## Python (AI)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+## Build
+dist/
+publish/

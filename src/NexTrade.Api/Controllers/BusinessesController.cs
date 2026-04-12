@@ -1,0 +1,31 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using NexTrade.Infrastructure.Services;
+
+namespace NexTrade.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class BusinessesController(BusinessService service) : ControllerBase
+{
+    [HttpGet("discover")]
+    [AllowAnonymous]
+    public async Task<ActionResult> Discover([FromQuery] BusinessService.BusinessFilter filter, CancellationToken ct)
+        => Ok(await service.DiscoverAsync(filter, ct));
+
+    [HttpGet("{uid:guid}")]
+    [AllowAnonymous]
+    public async Task<ActionResult> GetByUid(Guid uid, CancellationToken ct)
+    {
+        var result = await service.GetByUidAsync(uid, ct);
+        return result.Succeeded ? Ok(result.Data) : StatusCode(result.StatusCode, new { message = result.Error });
+    }
+
+    [HttpPut("{uid:guid}/profile")]
+    public async Task<ActionResult> UpdateProfile(Guid uid, [FromBody] BusinessService.UpdateProfileRequest req, CancellationToken ct)
+    {
+        var result = await service.UpdateProfileAsync(uid, req, ct);
+        return result.Succeeded ? NoContent() : StatusCode(result.StatusCode, new { message = result.Error });
+    }
+}

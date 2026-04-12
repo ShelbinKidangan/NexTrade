@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/hosting/">
+    <Project Path="NexTrade.AppHost/NexTrade.AppHost.csproj" />
+    <Project Path="NexTrade.ServiceDefaults/NexTrade.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="NexTrade.Api/NexTrade.Api.csproj" />
+    <Project Path="NexTrade.Consumers/NexTrade.Consumers.csproj" />
+    <Project Path="NexTrade.Core/NexTrade.Core.csproj" />
+    <Project Path="NexTrade.Infrastructure/NexTrade.Infrastructure.csproj" />
+    <Project Path="NexTrade.Shared/NexTrade.Shared.csproj" />
+  </Folder>
+</Solution>
