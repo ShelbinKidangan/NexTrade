@@ -111,6 +111,8 @@ public class AppDbContext(
             e.Property(c => c.Specifications).HasColumnType("jsonb");
             e.Property(c => c.DeliveryRegions).HasColumnType("jsonb");
             e.Property(c => c.Embedding).HasColumnType("vector(1536)");
+            e.Property(c => c.Slug).HasMaxLength(200);
+            e.HasIndex(c => new { c.TenantId, c.Slug }).IsUnique();
             e.HasOne(c => c.Category).WithMany().HasForeignKey(c => c.CategoryId);
 
             e.Property<NpgsqlTsVector?>("SearchVector").HasColumnType("tsvector");

@@ -83,22 +83,34 @@ export interface BusinessFilter {
 }
 
 // Catalog
+export interface CatalogMediaDto {
+  id: number;
+  url: string;
+  fileName: string;
+  fileSize: number;
+  isPrimary: boolean;
+  sortOrder: number;
+}
+
 export interface CatalogItemDto {
   uid: string;
   type: string;
   title: string;
   description: string | null;
   category: string | null;
+  categoryUid: string | null;
   pricingType: string;
   priceMin: number | null;
   priceMax: number | null;
   currencyCode: string | null;
   minOrderQuantity: number | null;
   leadTimeDays: number | null;
+  deliveryRegions: string[];
   status: string;
   viewCount: number;
   inquiryCount: number;
   primaryImageUrl: string | null;
+  media: CatalogMediaDto[];
   createdAt: string;
 }
 
@@ -138,4 +150,134 @@ export interface CatalogFilter {
   type?: string;
   status?: string;
   categoryUid?: string;
+}
+
+// Catalog categories
+export interface CategoryDto {
+  uid: string;
+  name: string;
+  slug: string;
+  parentUid: string | null;
+  level: number;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+// Discovery
+export interface DiscoverItemDto {
+  uid: string;
+  title: string;
+  description: string | null;
+  type: string;
+  category: string | null;
+  pricingType: string;
+  priceMin: number | null;
+  priceMax: number | null;
+  currencyCode: string | null;
+  leadTimeDays: number | null;
+  primaryImageUrl: string | null;
+  supplierUid: string;
+  supplierName: string;
+  supplierVerified: boolean;
+  supplierCountry: string | null;
+  createdAt: string;
+}
+
+export interface DiscoverBusinessDto {
+  uid: string;
+  name: string;
+  isVerified: boolean;
+  trustScore: number;
+  logo: string | null;
+  about: string | null;
+  city: string | null;
+  countryCode: string | null;
+  industry: string | null;
+  capabilities: string[];
+  publishedItemCount: number;
+  createdAt: string;
+}
+
+export interface DiscoverItemsFilter {
+  search?: string;
+  categoryUid?: string;
+  type?: string;
+  industry?: string;
+  country?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface DiscoverBusinessesFilter {
+  search?: string;
+  industry?: string;
+  country?: string;
+  verifiedOnly?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PublicBusinessProfileDto {
+  uid: string;
+  name: string;
+  isVerified: boolean;
+  trustScore: number;
+  logo: string | null;
+  bannerImage: string | null;
+  about: string | null;
+  industry: string | null;
+  city: string | null;
+  countryCode: string | null;
+  capabilities: string[];
+  certifications: string[];
+  deliveryRegions: string[];
+  yearEstablished: number;
+  companySize: string | null;
+  website: string | null;
+  followerCount: number;
+  publishedItemCount: number;
+  hasComplianceDocs: boolean;
+  items: DiscoverItemDto[];
+}
+
+// Saved suppliers
+export interface SavedSupplierDto {
+  uid: string;
+  supplierUid: string;
+  supplierName: string;
+  supplierVerified: boolean;
+  supplierLogo: string | null;
+  supplierCountry: string | null;
+  listUid: string | null;
+  listName: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface SupplierListDto {
+  uid: string;
+  name: string;
+  description: string | null;
+  supplierCount: number;
+  createdAt: string;
+}
+
+// Connections
+export interface ConnectionDto {
+  uid: string;
+  requesterUid: string;
+  targetUid: string;
+  type: string;
+  status: string;
+  otherUid: string;
+  otherName: string;
+  otherVerified: boolean;
+  otherLogo: string | null;
+  otherCountry: string | null;
+  createdAt: string;
+}
+
+export interface FollowStatusDto {
+  isFollowing: boolean;
+  followerCount: number;
 }

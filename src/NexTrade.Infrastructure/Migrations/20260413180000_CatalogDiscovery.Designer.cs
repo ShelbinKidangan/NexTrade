@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexTrade.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -14,9 +15,10 @@ using Pgvector;
 namespace NexTrade.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260413180000_CatalogDiscovery")]
+    partial class CatalogDiscovery
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -509,12 +511,6 @@ namespace NexTrade.Infrastructure.Migrations
                         .HasColumnType("tsvector")
                         .HasColumnName("search_vector");
 
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("slug");
-
                     b.Property<string>("Specifications")
                         .HasColumnType("jsonb")
                         .HasColumnName("specifications");
@@ -567,10 +563,6 @@ namespace NexTrade.Infrastructure.Migrations
                         .HasDatabaseName("ix_catalog_items_search_vector");
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "GIN");
-
-                    b.HasIndex("TenantId", "Slug")
-                        .IsUnique()
-                        .HasDatabaseName("ix_catalog_items_tenant_id_slug");
 
                     b.ToTable("catalog_items", (string)null);
                 });

@@ -4,10 +4,13 @@
       "Bash(grep -i \"\\\\.cs$\")",
       "Bash(git add:*)",
       "Bash(git reset:*)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(mv 20260413174230_AddCatalogItemSlug.cs 20260413190000_AddCatalogItemSlug.cs)",
+      "Bash(mv 20260413174230_AddCatalogItemSlug.Designer.cs 20260413190000_AddCatalogItemSlug.Designer.cs)"
     ],
     "additionalDirectories": [
-      "c:\\Users\\Razor\\source\\repos\\EntityNext\\NexTrade\\src\\NexTrade.Core\\Entities"
+      "c:\\Users\\Razor\\source\\repos\\EntityNext\\NexTrade\\src\\NexTrade.Core\\Entities",
+      "C:\\Users\\Razor\\source\\repos\\EntityNext\\NexTrade\\ui\\src\\app\\(app)\\catalog"
     ]
   }
 }

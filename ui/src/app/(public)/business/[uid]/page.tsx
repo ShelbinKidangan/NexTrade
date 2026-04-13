@@ -1,369 +1,204 @@
 "use client";
 
-import { use, useState } from "react";
-import {
-  BadgeCheck, Star, MapPin, Globe, Calendar, Users, ArrowLeft, MessageSquare,
-  Plus, Package, Link2,
-} from "lucide-react";
+import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  ArrowLeft, BadgeCheck, MapPin, Globe, Calendar, Users, Package, ShieldCheck,
+  Bookmark, BookmarkCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { mockBusinessDetails, mockCatalogItems } from "@/lib/mock-data";
+import { connectionsApi, discoveryApi, savedSuppliersApi, session } from "@/lib/api";
+import type { FollowStatusDto, PublicBusinessProfileDto, SavedSupplierDto } from "@/lib/types";
 
-const tabs = ["about", "products", "reviews", "documents"] as const;
-
-const reviews = [
-  {
-    uid: "r1",
-    reviewer: "FastPack Industries",
-    rating: 5,
-    title: "Excellent quality, delivered on time",
-    body: "Worked with them on a 5,000 unit run of CNC brackets. Quality was spot-on and they hit every milestone. Would order again.",
-    verified: true,
-    at: "2026-03-22",
-  },
-  {
-    uid: "r2",
-    reviewer: "LogistiX Freight",
-    rating: 5,
-    title: "Responsive and professional",
-    body: "Got a quote within 4 hours and they accommodated our rush schedule. Excellent communication throughout.",
-    verified: true,
-    at: "2026-02-14",
-  },
-  {
-    uid: "r3",
-    reviewer: "ElectroCore Components",
-    rating: 4,
-    title: "Good work, packaging could be better",
-    body: "Quality is great. Only feedback is that packaging for shipping was a bit underspec for international transit. Otherwise solid.",
-    verified: true,
-    at: "2026-01-30",
-  },
-];
-
-const ratingBars = [
-  { label: "Quality", value: 4.8 },
-  { label: "Communication", value: 4.9 },
-  { label: "Delivery", value: 4.7 },
-  { label: "Value", value: 4.6 },
-];
-
-export default function BusinessProfilePage({ params }: { params: Promise<{ uid: string }> }) {
+export default function PublicBusinessPage({ params }: { params: Promise<{ uid: string }> }) {
   const { uid } = use(params);
-  const business = mockBusinessDetails[uid];
-  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("about");
+  const [profile, setProfile] = useState<PublicBusinessProfileDto | null>(null);
+  const [follow, setFollow] = useState<FollowStatusDto | null>(null);
+  const [savedEntry, setSavedEntry] = useState<SavedSupplierDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const authed = typeof window !== "undefined" && session.hasTenant();
 
-  if (!business) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 py-16 text-center">
-        <p className="text-sm text-foreground-secondary">Business not found</p>
-        <Button variant="outline" size="sm" className="mt-4" render={<Link href="/discover" />}>
-          <ArrowLeft className="size-4" /> Back to Discover
-        </Button>
-      </div>
-    );
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [p, f] = await Promise.all([
+        discoveryApi.publicProfile(uid),
+        connectionsApi.followStatus(uid),
+      ]);
+      setProfile(p);
+      setFollow(f);
+      if (authed) {
+        try {
+          const saved = await savedSuppliersApi.list();
+          setSavedEntry(saved.find((s) => s.supplierUid === uid) ?? null);
+        } catch {
+          setSavedEntry(null);
+        }
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  }, [uid, authed]);
+
+  useEffect(() => { void reload(); }, [reload]);
+
+  async function toggleFollow() {
+    if (!authed) {
+      window.location.href = "/login";
+      return;
+    }
+    if (follow?.isFollowing) {
+      await connectionsApi.unfollow(uid);
+    } else {
+      await connectionsApi.follow(uid);
+    }
+    setFollow(await connectionsApi.followStatus(uid));
   }
 
-  const p = business.profile;
-  const featuredProducts = mockCatalogItems.filter((i) => i.status === "Published").slice(0, 6);
+  async function toggleSave() {
+    if (!authed) {
+      window.location.href = "/login";
+      return;
+    }
+    if (savedEntry) {
+      await savedSuppliersApi.remove(savedEntry.uid);
+      setSavedEntry(null);
+    } else {
+      const created = await savedSuppliersApi.save({ supplierUid: uid });
+      setSavedEntry(created);
+    }
+  }
+
+  if (loading) return <div className="p-6 text-sm text-foreground-secondary">Loading…</div>;
+  if (!profile) return <div className="p-6 text-sm text-danger">{error ?? "Business not found"}</div>;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 space-y-6">
-      {/* Banner */}
-      <div className="relative h-48 rounded-xl bg-linear-to-br from-accent/20 via-accent/10 to-accent/5 border border-border overflow-hidden">
-        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_20%_50%,white_0%,transparent_50%)]" />
-        <div className="absolute -bottom-8 left-6 flex size-20 items-center justify-center rounded-xl bg-background border border-border text-3xl font-bold text-foreground-secondary shadow-sm">
-          {business.name.charAt(0)}
-        </div>
-      </div>
+    <div className="max-w-5xl mx-auto p-4 space-y-4">
+      <Button variant="ghost" size="sm" render={<Link href="/discover" />}>
+        <ArrowLeft className="size-4" /> Back to discover
+      </Button>
 
-      {/* Header */}
-      <div className="pl-30 -mt-2 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold">{business.name}</h1>
-            {business.isVerified && <BadgeCheck className="size-5 text-accent" />}
-          </div>
-          {business.industry && (
-            <p className="text-sm text-foreground-secondary mt-0.5">{business.industry}</p>
-          )}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-foreground-secondary">
-            {p?.city && (
-              <span className="flex items-center gap-1">
-                <MapPin className="size-3" />
-                {p.city}{p.countryCode ? `, ${p.countryCode}` : ""}
-              </span>
-            )}
-            {business.yearEstablished && (
-              <span className="flex items-center gap-1">
-                <Calendar className="size-3" /> Est. {business.yearEstablished}
-              </span>
-            )}
-            {business.companySize && (
-              <span className="flex items-center gap-1">
-                <Users className="size-3" /> {business.companySize}
-              </span>
-            )}
-            {business.website && (
-              <a href={business.website} target="_blank" rel="noopener" className="flex items-center gap-1 text-accent hover:underline">
-                <Globe className="size-3" /> Website
-              </a>
-            )}
-            {business.linkedInUrl && (
-              <a href={business.linkedInUrl} target="_blank" rel="noopener" className="flex items-center gap-1 text-accent hover:underline">
-                <Link2 className="size-3" /> LinkedIn
-              </a>
-            )}
-          </div>
-          <div className="flex items-center gap-3 mt-2 text-xs">
-            <span className="flex items-center gap-1 font-medium">
-              <Star className="size-3.5 fill-warning text-warning" />
-              {business.trustScore.toFixed(1)} <span className="text-foreground-tertiary">({reviews.length} reviews)</span>
-            </span>
-            {p && (
-              <span className="text-foreground-secondary">{p.responseRate}% response rate</span>
-            )}
-            {p && (
-              <span className="text-foreground-secondary">~{p.avgResponseTimeHours}h avg response</span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Button size="sm">
-            <Plus className="size-4" /> Connect
-          </Button>
-          <Button variant="outline" size="sm">
-            <MessageSquare className="size-4" /> Message
-          </Button>
-          <Button variant="outline" size="sm">Request Quote</Button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-3 py-2 text-sm capitalize border-b-2 transition-colors ${
-              activeTab === tab
-                ? "border-accent text-foreground font-medium"
-                : "border-transparent text-foreground-secondary hover:text-foreground"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* About */}
-      {activeTab === "about" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            {p?.about && (
-              <div>
-                <h3 className="text-sm font-medium mb-2">About</h3>
-                <p className="text-sm text-foreground-secondary leading-relaxed">{p.about}</p>
+      <Card>
+        <CardContent className="pt-5">
+          <div className="flex items-start gap-4">
+            <div className="flex size-16 items-center justify-center rounded-xl bg-background-secondary text-xl font-semibold">
+              {profile.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.logo} alt={profile.name} className="size-full rounded-xl object-cover" />
+              ) : (
+                profile.name.charAt(0)
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-semibold">{profile.name}</h1>
+                {profile.isVerified && <BadgeCheck className="size-5 text-accent" />}
               </div>
-            )}
-
-            {p?.capabilities && p.capabilities.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium mb-2">Capabilities</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {p.capabilities.map((cap) => (
-                    <Badge key={cap} variant="outline">{cap}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {p?.certifications && p.certifications.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium mb-2">Certifications</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {p.certifications.map((cert) => (
-                    <Badge key={cert} variant="success">{cert}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {p?.deliveryRegions && p.deliveryRegions.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium mb-2">Delivery Regions</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {p.deliveryRegions.map((r) => (
-                    <Badge key={r} variant="secondary">{r}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <Card>
-              <CardContent className="pt-4 space-y-2">
-                <h3 className="text-sm font-medium mb-1">Key Facts</h3>
-                {business.industry && (
-                  <div className="flex justify-between text-xs">
-                    <span className="text-foreground-secondary">Industry</span>
-                    <span>{business.industry}</span>
-                  </div>
-                )}
-                {business.companySize && (
-                  <div className="flex justify-between text-xs">
-                    <span className="text-foreground-secondary">Size</span>
-                    <span>{business.companySize}</span>
-                  </div>
-                )}
-                {business.yearEstablished && (
-                  <div className="flex justify-between text-xs">
-                    <span className="text-foreground-secondary">Founded</span>
-                    <span>{business.yearEstablished}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-xs">
-                  <span className="text-foreground-secondary">Trust Score</span>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-foreground-secondary mt-1">
+                {profile.industry && <span>{profile.industry}</span>}
+                {profile.city && (
                   <span className="flex items-center gap-1">
-                    <Star className="size-3 fill-warning text-warning" />
-                    {business.trustScore.toFixed(1)}
+                    <MapPin className="size-3" /> {profile.city}
+                    {profile.countryCode && `, ${profile.countryCode}`}
                   </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-4 space-y-2">
-                <h3 className="text-sm font-medium mb-1">Locations</h3>
-                {p?.city && (
-                  <div className="text-xs">
-                    <div className="font-medium">{p.city} (HQ)</div>
-                    <div className="text-foreground-tertiary">{p.countryCode}</div>
-                  </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
-
-      {/* Products */}
-      {activeTab === "products" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {featuredProducts.map((item) => (
-            <Card key={item.uid}>
-              <CardContent className="pt-4">
-                <div className="aspect-video rounded-lg bg-background-secondary flex items-center justify-center mb-3">
-                  <Package className="size-8 text-foreground-tertiary" />
-                </div>
-                <h4 className="text-sm font-medium line-clamp-1">{item.title}</h4>
-                {item.description && (
-                  <p className="text-xs text-foreground-secondary line-clamp-2 mt-1">{item.description}</p>
-                )}
-                <div className="flex items-center justify-between mt-3 text-xs">
-                  <Badge variant="outline">{item.type}</Badge>
-                  <span className="font-medium">
-                    {item.pricingType === "ContactForQuote"
-                      ? "Get Quote"
-                      : item.priceMin
-                      ? `${item.currencyCode || "$"}${item.priceMin}${item.priceMax ? `–${item.priceMax}` : ""}`
-                      : "—"}
+                {profile.yearEstablished > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Calendar className="size-3" /> Est. {profile.yearEstablished}
                   </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Reviews */}
-      {activeTab === "reviews" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-1 h-fit">
-            <CardContent className="pt-4">
-              <div className="text-center mb-4">
-                <div className="text-4xl font-bold">{business.trustScore.toFixed(1)}</div>
-                <div className="flex items-center justify-center gap-0.5 my-1">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star
-                      key={s}
-                      className={`size-4 ${
-                        s <= Math.round(business.trustScore)
-                          ? "fill-warning text-warning"
-                          : "text-foreground-tertiary"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <div className="text-xs text-foreground-secondary">{reviews.length} reviews</div>
+                )}
+                {profile.companySize && (
+                  <span className="flex items-center gap-1">
+                    <Users className="size-3" /> {profile.companySize}
+                  </span>
+                )}
+                {profile.website && (
+                  <a href={profile.website} target="_blank" rel="noreferrer"
+                     className="flex items-center gap-1 hover:text-accent">
+                    <Globe className="size-3" /> Website
+                  </a>
+                )}
               </div>
-              <div className="space-y-2">
-                {ratingBars.map((b) => (
-                  <div key={b.label}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-foreground-secondary">{b.label}</span>
-                      <span className="font-medium">{b.value.toFixed(1)}</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-background-secondary overflow-hidden">
-                      <div
-                        className="h-full bg-accent"
-                        style={{ width: `${(b.value / 5) * 100}%` }}
-                      />
-                    </div>
-                  </div>
+              {profile.about && (
+                <p className="text-sm text-foreground-secondary mt-3 max-w-2xl">{profile.about}</p>
+              )}
+
+              <div className="flex gap-2 mt-4">
+                <Button size="sm" variant={follow?.isFollowing ? "outline" : "default"} onClick={toggleFollow}>
+                  {follow?.isFollowing ? "Following" : "Follow"}
+                </Button>
+                <Button size="sm" variant="outline" onClick={toggleSave}>
+                  {savedEntry ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
+                  {savedEntry ? "Saved" : "Save supplier"}
+                </Button>
+                <span className="text-xs text-foreground-tertiary self-center">
+                  {follow?.followerCount ?? profile.followerCount} followers
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <div className="text-sm font-medium">Trust Score</div>
+              <div className="text-lg font-bold">{profile.trustScore.toFixed(1)}</div>
+              <Badge variant={profile.hasComplianceDocs ? "success" : "outline"} className="gap-1">
+                <ShieldCheck className="size-3" />
+                {profile.hasComplianceDocs ? "Compliance verified" : "Compliance pending"}
+              </Badge>
+            </div>
+          </div>
+
+          {profile.capabilities.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <h2 className="text-xs font-medium text-foreground-secondary mb-2">Capabilities</h2>
+              <div className="flex flex-wrap gap-1">
+                {profile.capabilities.map((c) => (
+                  <Badge key={c} variant="outline">{c}</Badge>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-          <div className="lg:col-span-2 space-y-3">
-            {reviews.map((r) => (
-              <Card key={r.uid}>
-                <CardContent className="pt-4">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{r.reviewer}</span>
-                        {r.verified && (
-                          <Badge variant="success" className="gap-1">
-                            <BadgeCheck className="size-3" /> Verified Purchase
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-0.5 mt-1">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`size-3 ${
-                              s <= r.rating ? "fill-warning text-warning" : "text-foreground-tertiary"
-                            }`}
-                          />
-                        ))}
-                      </div>
+      <div>
+        <h2 className="text-base font-semibold mb-2">Published items ({profile.publishedItemCount})</h2>
+        {profile.items.length === 0 ? (
+          <Card><CardContent className="pt-4 pb-4 text-center">
+            <p className="text-sm text-foreground-secondary">No published items yet.</p>
+          </CardContent></Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {profile.items.map((item) => (
+              <Link key={item.uid} href={`/discover/item/${item.uid}`}>
+                <Card className="h-full transition-all hover:border-border-strong">
+                  <CardContent className="pt-3">
+                    <div className="aspect-video rounded-md bg-background-secondary mb-2 overflow-hidden flex items-center justify-center">
+                      {item.primaryImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.primaryImageUrl} alt={item.title} className="size-full object-cover" />
+                      ) : (
+                        <Package className="size-5 text-foreground-tertiary" />
+                      )}
                     </div>
-                    <span className="text-[11px] text-foreground-tertiary">{r.at}</span>
-                  </div>
-                  <h4 className="text-sm font-medium mb-1">{r.title}</h4>
-                  <p className="text-xs text-foreground-secondary leading-relaxed">{r.body}</p>
-                </CardContent>
-              </Card>
+                    <h3 className="text-sm font-medium line-clamp-1">{item.title}</h3>
+                    {item.description && (
+                      <p className="text-xs text-foreground-secondary line-clamp-2 mt-0.5">{item.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 text-[11px] text-foreground-tertiary mt-2">
+                      <Badge variant="outline" className="text-[10px]">{item.type}</Badge>
+                      {item.category && <span>{item.category}</span>}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Documents */}
-      {activeTab === "documents" && (
-        <div className="text-center py-12">
-          <p className="text-sm text-foreground-secondary">
-            Compliance documents are visible to connected businesses only.
-          </p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

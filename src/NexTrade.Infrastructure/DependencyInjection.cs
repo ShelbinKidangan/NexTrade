@@ -38,6 +38,11 @@ public static class DependencyInjection
         services.AddScoped<AuthService>();
         services.AddScoped<BusinessService>();
         services.AddScoped<CatalogService>();
+        services.AddScoped<CatalogMediaService>();
+        services.AddScoped<CatalogCategoryService>();
+        services.AddScoped<DiscoveryService>();
+        services.AddScoped<SavedSuppliersService>();
+        services.AddScoped<ConnectionsService>();
         services.AddScoped<ReferenceService>();
 
         return services;

@@ -156,6 +156,11 @@ export async function apiUpload<T>(path: string, formData: FormData): Promise<T>
 import type {
   PagedResult, BusinessDto, BusinessDetailDto, UpdateProfileRequest, BusinessFilter,
   CatalogItemDto, CreateCatalogItemRequest, UpdateCatalogItemRequest, CatalogFilter,
+  CatalogMediaDto, CategoryDto,
+  DiscoverItemDto, DiscoverBusinessDto, DiscoverItemsFilter, DiscoverBusinessesFilter,
+  PublicBusinessProfileDto,
+  SavedSupplierDto, SupplierListDto,
+  ConnectionDto, FollowStatusDto,
 } from "@/lib/types";
 
 function qs(params: Record<string, string | number | boolean | undefined | null>): string {
@@ -219,12 +224,92 @@ export const referenceApi = {
 export const catalogApi = {
   list: (filter: CatalogFilter) =>
     apiFetch<PagedResult<CatalogItemDto>>(`/api/catalog?${qs(filter as Record<string, string>)}`),
+  get: (uid: string) =>
+    apiFetch<CatalogItemDto>(`/api/catalog/${uid}`),
   create: (data: CreateCatalogItemRequest) =>
     apiFetch<CatalogItemDto>("/api/catalog", { method: "POST", body: JSON.stringify(data) }),
   update: (uid: string, data: UpdateCatalogItemRequest) =>
     apiFetch<CatalogItemDto>(`/api/catalog/${uid}`, { method: "PUT", body: JSON.stringify(data) }),
-  publish: (uid: string) =>
-    apiFetch<void>(`/api/catalog/${uid}/publish`, { method: "POST" }),
-  archive: (uid: string) =>
-    apiFetch<void>(`/api/catalog/${uid}/archive`, { method: "POST" }),
+  setStatus: (uid: string, status: "Draft" | "Published" | "Archived") =>
+    apiFetch<void>(`/api/catalog/${uid}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  remove: (uid: string) =>
+    apiFetch<void>(`/api/catalog/${uid}`, { method: "DELETE" }),
+
+  // Media
+  listMedia: (uid: string) =>
+    apiFetch<CatalogMediaDto[]>(`/api/catalog/${uid}/media`),
+  uploadMedia: (uid: string, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return apiUpload<CatalogMediaDto>(`/api/catalog/${uid}/media`, fd);
+  },
+  deleteMedia: (uid: string, mediaId: number) =>
+    apiFetch<void>(`/api/catalog/${uid}/media/${mediaId}`, { method: "DELETE" }),
+  setPrimaryMedia: (uid: string, mediaId: number) =>
+    apiFetch<void>(`/api/catalog/${uid}/media/${mediaId}/primary`, { method: "POST" }),
+};
+
+export const categoriesApi = {
+  list: () => apiFetch<CategoryDto[]>("/api/catalog-categories", { auth: "none" }),
+  create: (data: { name: string; slug: string; parentUid?: string; sortOrder?: number }) =>
+    apiFetch<CategoryDto>("/api/catalog-categories", {
+      method: "POST", body: JSON.stringify(data), auth: "admin",
+    }),
+  update: (uid: string, data: { name?: string; slug?: string; parentUid?: string; sortOrder?: number; isActive?: boolean }) =>
+    apiFetch<void>(`/api/catalog-categories/${uid}`, {
+      method: "PUT", body: JSON.stringify(data), auth: "admin",
+    }),
+  remove: (uid: string) =>
+    apiFetch<void>(`/api/catalog-categories/${uid}`, { method: "DELETE", auth: "admin" }),
+};
+
+export const discoveryApi = {
+  items: (filter: DiscoverItemsFilter) =>
+    apiFetch<PagedResult<DiscoverItemDto>>(
+      `/api/discover/items?${qs(filter as Record<string, string>)}`,
+      { auth: "none" }
+    ),
+  businesses: (filter: DiscoverBusinessesFilter) =>
+    apiFetch<PagedResult<DiscoverBusinessDto>>(
+      `/api/discover/businesses?${qs(filter as Record<string, string>)}`,
+      { auth: "none" }
+    ),
+  publicProfile: (uid: string) =>
+    apiFetch<PublicBusinessProfileDto>(`/api/discover/business/${uid}`, { auth: "none" }),
+};
+
+export const savedSuppliersApi = {
+  list: (listUid?: string) =>
+    apiFetch<SavedSupplierDto[]>(`/api/saved-suppliers${listUid ? `?listUid=${listUid}` : ""}`),
+  save: (data: { supplierUid: string; listUid?: string; notes?: string }) =>
+    apiFetch<SavedSupplierDto>("/api/saved-suppliers", {
+      method: "POST", body: JSON.stringify(data),
+    }),
+  update: (uid: string, data: { listUid?: string; notes?: string }) =>
+    apiFetch<void>(`/api/saved-suppliers/${uid}`, { method: "PATCH", body: JSON.stringify(data) }),
+  remove: (uid: string) =>
+    apiFetch<void>(`/api/saved-suppliers/${uid}`, { method: "DELETE" }),
+
+  listLists: () => apiFetch<SupplierListDto[]>("/api/saved-suppliers/lists"),
+  createList: (data: { name: string; description?: string }) =>
+    apiFetch<SupplierListDto>("/api/saved-suppliers/lists", {
+      method: "POST", body: JSON.stringify(data),
+    }),
+  updateList: (uid: string, data: { name?: string; description?: string }) =>
+    apiFetch<void>(`/api/saved-suppliers/lists/${uid}`, {
+      method: "PATCH", body: JSON.stringify(data),
+    }),
+  deleteList: (uid: string) =>
+    apiFetch<void>(`/api/saved-suppliers/lists/${uid}`, { method: "DELETE" }),
+};
+
+export const connectionsApi = {
+  following: () => apiFetch<ConnectionDto[]>("/api/connections/following"),
+  followers: () => apiFetch<ConnectionDto[]>("/api/connections/followers"),
+  follow: (targetUid: string) =>
+    apiFetch<ConnectionDto>(`/api/connections/follow/${targetUid}`, { method: "POST" }),
+  unfollow: (targetUid: string) =>
+    apiFetch<void>(`/api/connections/follow/${targetUid}`, { method: "DELETE" }),
+  followStatus: (targetUid: string) =>
+    apiFetch<FollowStatusDto>(`/api/connections/follow/${targetUid}/status`, { auth: "none" }),
 };

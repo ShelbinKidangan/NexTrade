@@ -7,6 +7,7 @@ public class CatalogItem : TenantEntity
 {
     public CatalogItemType Type { get; set; }
     public string Title { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? Specifications { get; set; } // JSONB
     public long? CategoryId { get; set; }

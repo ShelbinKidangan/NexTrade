@@ -1,43 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { catalogApi } from "@/lib/api";
+import { Card, CardContent } from "@/components/ui/card";
+import { catalogApi, categoriesApi } from "@/lib/api";
+import type { CategoryDto } from "@/lib/types";
 
 export default function NewCatalogItemPage() {
   const router = useRouter();
   const [form, setForm] = useState({
     title: "", description: "", type: "Product" as "Product" | "Service",
-    pricingType: "Fixed" as string, priceMin: "", currencyCode: "USD",
-    minOrderQuantity: "", leadTimeDays: "",
+    pricingType: "Fixed", priceMin: "", currencyCode: "USD",
+    minOrderQuantity: "", leadTimeDays: "", categoryUid: "", deliveryRegions: "",
   });
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  useEffect(() => {
+    categoriesApi.list().then(setCategories).catch(() => {});
+  }, []);
+
+  const set = (field: string) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      await catalogApi.create({
+      const created = await catalogApi.create({
         type: form.type,
         title: form.title,
         description: form.description || undefined,
+        categoryUid: form.categoryUid || undefined,
         pricingType: form.pricingType,
         priceMin: form.priceMin ? Number(form.priceMin) : undefined,
         currencyCode: form.currencyCode,
         minOrderQuantity: form.minOrderQuantity ? Number(form.minOrderQuantity) : undefined,
         leadTimeDays: form.leadTimeDays ? Number(form.leadTimeDays) : undefined,
+        deliveryRegions: form.deliveryRegions
+          ? form.deliveryRegions.split(",").map((s) => s.trim()).filter(Boolean)
+          : undefined,
       });
-      router.push("/catalog");
-    } catch (err: any) {
-      setError(err.message || "Failed to create item");
+
+      for (const file of files) {
+        await catalogApi.uploadMedia(created.uid, file);
+      }
+
+      router.push(`/catalog/${created.uid}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create item");
     } finally {
       setLoading(false);
     }
@@ -78,6 +95,22 @@ export default function NewCatalogItemPage() {
               />
             </div>
 
+            <div>
+              <label className="text-xs font-medium text-foreground-secondary">Category</label>
+              <select
+                value={form.categoryUid}
+                onChange={set("categoryUid")}
+                className="w-full h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+              >
+                <option value="">— No category —</option>
+                {categories.map((c) => (
+                  <option key={c.uid} value={c.uid}>
+                    {"  ".repeat(c.level)}{c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-medium text-foreground-secondary">Pricing</label>
@@ -108,6 +141,25 @@ export default function NewCatalogItemPage() {
                 <label className="text-xs font-medium text-foreground-secondary">Lead Time (days)</label>
                 <Input type="number" value={form.leadTimeDays} onChange={set("leadTimeDays")} placeholder="7" />
               </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-foreground-secondary">Delivery regions (comma separated)</label>
+              <Input value={form.deliveryRegions} onChange={set("deliveryRegions")} placeholder="APAC, EMEA" />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-foreground-secondary">Images</label>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                className="w-full text-xs file:mr-2 file:rounded file:border file:border-border file:bg-background-secondary file:px-2 file:py-1 file:text-xs"
+              />
+              {files.length > 0 && (
+                <p className="text-[11px] text-foreground-tertiary mt-1">{files.length} file(s) queued</p>
+              )}
             </div>
 
             <div className="flex gap-2 pt-2">
