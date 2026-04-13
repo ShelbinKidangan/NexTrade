@@ -6,11 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NexTrade is an AI-native B2B platform — "LinkedIn for businesses." Companies register, build verified profiles, list products/services, discover partners, request quotes, and transact. Every business is a peer — no buyer/supplier distinction.
 
-Standalone app, sold as add-on to ProcNext S2P system. Separate repo, separate DB, separate deployment.
+Standalone app. Separate repo, separate DB, separate deployment.
 
 ## Architecture
-
-Mirrors ProcNext patterns exactly:
 
 - **Core** (`NexTrade.Core`) — entities, interfaces, enums. Zero dependencies.
 - **Shared** (`NexTrade.Shared`) — DTOs, MassTransit contracts.
@@ -23,9 +21,7 @@ Mirrors ProcNext patterns exactly:
 
 Solution file is [src/NexTrade.slnx](src/NexTrade.slnx) — the new XML solution format. `dotnet build`/`run` against the `.slnx` or individual project directories.
 
-### Key Difference from ProcNext
-
-In ProcNext, tenant = buying org, suppliers are master data within that tenant.
+### Multi-Tenant Model
 
 In NexTrade, **tenant = business**, and **cross-tenant visibility is the core feature**. This means:
 

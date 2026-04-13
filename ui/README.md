@@ -60,7 +60,7 @@ src/
 ## Design System
 
 - **Layout:** Top navigation (not sidebar) — NexTrade is a discovery platform
-- **Colors:** Inherited from ProcNext design system (blue accent, Notion warm-gray palette)
+- **Colors:** Blue accent, Notion warm-gray palette
 - **Typography:** Inter (sans), JetBrains Mono (mono)
 - **Components:** shadcn/ui with `data-slot` attributes
 - **Dark mode:** Supported via `next-themes`

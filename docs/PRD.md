@@ -2,7 +2,7 @@
 
 > **Status:** Draft
 > **Date:** 2026-04-12
-> **Relationship to ProcNext:** Standalone add-on portal. Sold alongside S2P system with separate login. No integration with ProcNext in Phase 1.
+> **Deployment:** Standalone portal with separate login.
 
 ---
 
@@ -211,7 +211,7 @@ A new-age, AI-native B2B platform — **LinkedIn for businesses**. Companies reg
 
 ## 6. Architecture
 
-Mirrors ProcNext patterns exactly.
+Standard layered .NET architecture.
 
 ### 6.1 Solution Structure
 
@@ -289,7 +289,7 @@ SupplierNet/
 | Embeddings | pgvector for semantic search |
 | Orchestration | Aspire (dev), Docker Compose (prod) |
 
-### 6.3 Patterns (Same as ProcNext)
+### 6.3 Patterns
 
 - **TenantEntity** base: `Id (long)`, `Uid (Guid)`, `TenantId`, audit fields
 - **ChildEntity** base: no Uid/TenantId — isolated via parent FK
@@ -304,9 +304,7 @@ SupplierNet/
 
 ### 6.4 Key Architectural Difference
 
-In ProcNext, tenant = buying organization, and other businesses are master data (Supplier entity).
-
-In SupplierNet, **tenant = business**, and **cross-tenant visibility is the core feature**. This means:
+In NexTrade, **tenant = business**, and **cross-tenant visibility is the core feature**. This means:
 
 - Discovery/search queries bypass tenant filters (platform-scoped)
 - Public profiles are readable by all authenticated users
@@ -487,7 +485,7 @@ Industry
 ├── Name, Slug, ParentId, SortOrder
 
 Country, Currency
-├── (Same as ProcNext — seeded reference data)
+├── (seeded reference data)
 ```
 
 ---
@@ -543,7 +541,7 @@ Country, Currency
 | Name | Notes |
 |------|-------|
 | **NexTrade** | Next-gen trade network. Clean, modern |
-| **ProcNet** | Brand continuity with ProcNext |
+| **ProcNet** | Short, professional |
 | **TradeForge** | Building trade relationships |
 | **BizNex** | Business + Nexus |
 | **Nexura** | Next + secure/trust |
@@ -556,13 +554,13 @@ _Decision pending._
 
 ### Design Philosophy
 
-ProcNext is an **internal enterprise tool** — sidebar-heavy, data-dense, task-oriented. SupplierNet is a **network/marketplace** — outward-facing, social, and discoverable. Reuse ProcNext's design system (colors, components, typography) but change the layout paradigm.
+NexTrade is a **network/marketplace** — outward-facing, social, and discoverable. The layout prioritizes content discovery over dense task workflows.
 
 **Key principle:** "Notion meets LinkedIn for B2B"
 
 ### Layout: Top Navigation (Not Sidebar)
 
-ProcNext uses a left sidebar for 20+ deep workflow nav items. SupplierNet has fewer sections and the focus is on **content discovery**, not deep navigation.
+NexTrade has few top-level sections and the focus is on **content discovery**, not deep navigation.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -577,24 +575,24 @@ ProcNext uses a left sidebar for 20+ deep workflow nav items. SupplierNet has fe
 
 **Why top nav over sidebar:**
 - Discovery is the core UX — wide content area for business cards, product grids, search results
-- Fewer nav items (6-7 vs ProcNext's 20+) — fits in a top bar
+- Fewer nav items (6-7) — fits in a top bar
 - Feels like a platform, not an admin panel
 - Public profile pages (shareable URLs) need a clean, non-app layout
 
-### Design System: Inherit from ProcNext, Adapt for Network
+### Design System
 
-| Aspect | ProcNext | SupplierNet |
-|--------|----------|-------------|
-| **Layout** | Left sidebar | Top navigation |
-| **Primary color** | Accent system (blue default) | Same — reuse accent picker |
-| **Typography** | Inter + JetBrains Mono | Same |
-| **Components** | shadcn/ui | Same library, same variants |
-| **Cards** | Data cards (KPIs, stats) | Business cards, product cards (visual, image-heavy) |
-| **Tables** | Heavy use everywhere | Only for management views (my catalog, my orders) |
-| **Dark mode** | Yes | Yes, same CSS variables |
-| **Content width** | 1200px max | 1280px max (wider for card grids) |
-| **Public pages** | None (all auth'd) | Yes — profiles, product pages, search |
-| **Density** | Compact (enterprise) | Comfortable (browsing/discovery) |
+| Aspect | NexTrade |
+|--------|----------|
+| **Layout** | Top navigation |
+| **Primary color** | Accent system (blue default) |
+| **Typography** | Inter + JetBrains Mono |
+| **Components** | shadcn/ui |
+| **Cards** | Business cards, product cards (visual, image-heavy) |
+| **Tables** | Only for management views (my catalog, my orders) |
+| **Dark mode** | Yes |
+| **Content width** | 1280px max (wider for card grids) |
+| **Public pages** | Yes — profiles, product pages, search |
+| **Density** | Comfortable (browsing/discovery) |
 
 ### Page Layouts
 
@@ -696,7 +694,7 @@ ProcNext uses a left sidebar for 20+ deep workflow nav items. SupplierNet has fe
 └──────────────────────────────────────────────────┘
 ```
 
-#### My Catalog — Management View (Uses ProcNext Table Pattern)
+#### My Catalog — Management View
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -707,7 +705,7 @@ ProcNext uses a left sidebar for 20+ deep workflow nav items. SupplierNet has fe
 │  🔍 Search...   [Category ▾] [Type ▾]             │
 │                                                   │
 │  Table: Image | Title | Category | Price | Status  │
-│  (standard ProcNext table with sort, pagination)   │
+│  (standard table with sort, pagination)             │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -731,8 +729,8 @@ ProcNext uses a left sidebar for 20+ deep workflow nav items. SupplierNet has fe
 
 #### RFQ Pages
 
-- **RFQ list** — ProcNext table pattern with status tabs, filters, pagination
-- **RFQ detail** — ProcNext transaction detail pattern: header + content + sidebar (quotes, activity timeline)
+- **RFQ list** — table with status tabs, filters, pagination
+- **RFQ detail** — transaction detail layout: header + content + sidebar (quotes, activity timeline)
 - **Quote comparison** — Side-by-side cards with AI summary at top
 
 ### UI Differentiators

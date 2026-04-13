@@ -1,7 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Read(//c/Users/Razor/source/repos/EntityNext/ProcNext/**)"
-    ]
+    "allow": []
   }
 }
