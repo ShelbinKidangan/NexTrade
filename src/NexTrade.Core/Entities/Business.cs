@@ -1,3 +1,5 @@
+using NexTrade.Core.Enums;
+
 namespace NexTrade.Core.Entities;
 
 /// <summary>
@@ -8,12 +10,29 @@ public class Business : BaseEntity
 {
     public string Name { get; set; } = string.Empty;
     public string? Subdomain { get; set; }
-    public bool IsActive { get; set; } = true;
+
+    // Structured filterable attributes — PRD §8 places these on Business, not BusinessProfile.
+    public long? IndustryId { get; set; }
+    public long? SubIndustryId { get; set; }
+    public CompanySize? CompanySize { get; set; }
+    public int? YearEstablished { get; set; }
+    public string? Website { get; set; }
+    public string? LinkedInUrl { get; set; }
+
+    // Trust + verification
     public bool IsVerified { get; set; }
     public DateTime? VerifiedAt { get; set; }
     public decimal TrustScore { get; set; }
 
+    // Provenance — load-bearing for the S2P seeding flywheel.
+    public ProfileSource ProfileSource { get; set; } = ProfileSource.SelfRegistered;
+    public DateTime? ClaimedAt { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
     // Navigation
+    public Industry? Industry { get; set; }
+    public Industry? SubIndustry { get; set; }
     public BusinessProfile? Profile { get; set; }
     public ICollection<CatalogItem> CatalogItems { get; set; } = [];
     public ICollection<ComplianceDocument> ComplianceDocuments { get; set; } = [];

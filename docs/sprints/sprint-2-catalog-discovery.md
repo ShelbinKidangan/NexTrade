@@ -1,10 +1,12 @@
-# Phase 2 — Catalog & Public Discovery
+# Sprint 2 — Catalog & Public Discovery
 
-> **Depends on:** [Phase 1 — Foundation & Identity](phase-1-foundation-identity.md).
+> **Maps to PRD:** Most of this sprint delivers [PRD Phase 1 — Identity + Seeding](../PRD.md) — public business profile, product/service catalog, catalog media, keyword search/filters. The Saved Suppliers / Supplier Lists feature belongs to PRD Phase 2 — Discovery + Engagement, and is included here because it has no backend dependency on RFQs and ships naturally alongside discovery. Semantic search, AI matching, and the Vendor Due Diligence tool also sit in PRD Phase 1 but are AI-powered, so they land in [Sprint 6](sprint-6-ai-layer.md).
+>
+> **Depends on:** [Sprint 1 — Foundation & Identity](sprint-1-foundation-identity.md).
 
 ## Goal
 
-Suppliers list products and services with media, and buyers — logged in or not — discover them via keyword search and public business profiles. Buyers can save suppliers into custom lists. Discovery here is **non-AI**: Postgres full-text search over `tsvector` columns populated by triggers. Semantic search lands in [Phase 6](phase-6-ai-layer.md).
+Suppliers list products and services with media, and buyers — logged in or not — discover them via keyword search and public business profiles. Buyers can save suppliers into custom lists. Discovery here is **non-AI**: Postgres full-text search over `tsvector` columns populated by triggers. Semantic search lands in [Sprint 6](sprint-6-ai-layer.md).
 
 ## Scope
 
@@ -12,17 +14,17 @@ Suppliers list products and services with media, and buyers — logged in or not
 
 - CatalogItem CRUD with filtering, pagination, and status transitions (`Draft` → `Published` → `Archived`). Extend [CatalogService](../../src/NexTrade.Infrastructure/Services/CatalogService.cs) and [CatalogController](../../src/NexTrade.Api/Controllers/CatalogController.cs).
 - [CatalogMedia](../../src/NexTrade.Core/Entities/CatalogMedia.cs) upload to Azure Blob (Azurite in dev). Image list, set primary, delete.
-- [CatalogCategory](../../src/NexTrade.Core/Entities/CatalogCategory.cs) tree — read-any API, mutation API (platform-admin only; admin UI is in [Phase 5](phase-5-platform-admin-console.md), endpoints exist here).
+- [CatalogCategory](../../src/NexTrade.Core/Entities/CatalogCategory.cs) tree — read-any API, mutation API (platform-admin only; admin UI is in [Sprint 5](sprint-5-platform-admin-console.md), endpoints exist here).
 - **Discovery (non-AI):** Postgres full-text search over `catalog_items` (name, description, tags) and `businesses` (name, bio, capabilities) via `tsvector` + GIN index. Ranking via `ts_rank_cd`, filters by category, industry, country.
 - Public business profile endpoint — enrich existing `GetByUid` with published catalog items, compliance badge placeholder, and follower count.
-- Saved-suppliers / follow flow built on the existing [Connection](../../src/NexTrade.Core/Entities/Connection.cs) entity in Follow mode.
+- Saved suppliers on the first-class [SavedSupplier](../../src/NexTrade.Core/Entities/SavedSupplier.cs) / [SupplierList](../../src/NexTrade.Core/Entities/SavedSupplier.cs) entities (tenant-scoped). A simple follow flow on [Connection](../../src/NexTrade.Core/Entities/Connection.cs) ships alongside but is not a substitute.
 - Frontend pages: [(app)/catalog](../../ui/src/app/(app)/catalog/), [(app)/catalog/new](../../ui/src/app/(app)/catalog/new/), [(app)/discover](../../ui/src/app/(app)/discover/), [(public)/business/[uid]](../../ui/src/app/(public)/business/[uid]/), [(app)/suppliers](../../ui/src/app/(app)/suppliers/).
 
 **Out:**
 
-- Semantic search, AI matching, due-diligence tool — all [Phase 6](phase-6-ai-layer.md).
-- RFQ creation from discovery — [Phase 3](phase-3-rfq-quoting.md).
-- Messaging a supplier from their profile — [Phase 4](phase-4-messaging-compliance-trust.md).
+- Semantic search, AI matching, due-diligence tool — all [Sprint 6](sprint-6-ai-layer.md).
+- RFQ creation from discovery — [Sprint 3](sprint-3-rfq-quoting.md).
+- Messaging a supplier from their profile — [Sprint 4](sprint-4-messaging-compliance-trust.md).
 
 ## Backend work
 
@@ -32,7 +34,8 @@ Suppliers list products and services with media, and buyers — logged in or not
 - Create `DiscoveryController` — `GET /discover/items`, `GET /discover/businesses`. Both are `[AllowAnonymous]` and use `.IgnoreQueryFilters()` because they are platform-scope.
 - Create `DiscoveryService` — builds FTS queries, applies filters, returns paged results via `QueryExtensions.ToPagedResultAsync`.
 - Create `CatalogMediaService` — Blob upload/download via `Azure.Storage.Blobs`. Signed URL generation for private items, public URLs for published media.
-- Create `ConnectionsController` / `ConnectionsService` — follow, unfollow, list followed suppliers, list followers. Uses `BaseEntity` cross-tenant semantics.
+- Create `SavedSuppliersController` / `SavedSuppliersService` — add/remove supplier from personal list, list/create/rename/delete [SupplierList](../../src/NexTrade.Core/Entities/SavedSupplier.cs)s, per-bookmark notes. Tenant-scoped.
+- Create `ConnectionsController` / `ConnectionsService` — follow, unfollow, list followed suppliers, list followers. Uses [Connection](../../src/NexTrade.Core/Entities/Connection.cs) cross-tenant semantics. Independent of SavedSupplier.
 - Create `CatalogCategoriesController` — read anonymous; mutations `[Authorize(Policy="PlatformAdmin")]`.
 
 **Full-text search plumbing:**
@@ -43,10 +46,12 @@ Suppliers list products and services with media, and buyers — logged in or not
 **Files to create:**
 
 - `src/NexTrade.Api/Controllers/DiscoveryController.cs`
+- `src/NexTrade.Api/Controllers/SavedSuppliersController.cs`
 - `src/NexTrade.Api/Controllers/ConnectionsController.cs`
 - `src/NexTrade.Api/Controllers/CatalogCategoriesController.cs`
 - `src/NexTrade.Infrastructure/Services/DiscoveryService.cs`
 - `src/NexTrade.Infrastructure/Services/CatalogMediaService.cs`
+- `src/NexTrade.Infrastructure/Services/SavedSuppliersService.cs`
 - `src/NexTrade.Infrastructure/Services/ConnectionsService.cs`
 - `src/NexTrade.Infrastructure/Services/CatalogCategoryService.cs`
 
@@ -98,5 +103,5 @@ Manual walkthrough: register two tenants → Tenant A publishes items → open p
 
 ## Dependencies
 
-- Phase 1 migration provides the FTS columns; this phase adds the trigger and index.
-- Phase 1 JWT + tenant middleware; nothing here bypasses it except discovery controllers.
+- [Sprint 1](sprint-1-foundation-identity.md) migration provides the FTS columns; this sprint adds the trigger and index.
+- [Sprint 1](sprint-1-foundation-identity.md) JWT + tenant middleware; nothing here bypasses it except discovery controllers.

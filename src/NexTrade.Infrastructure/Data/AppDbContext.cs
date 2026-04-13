@@ -16,29 +16,29 @@ public class AppDbContext(
     // Business (tenant)
     public DbSet<Business> Businesses => Set<Business>();
     public DbSet<BusinessProfile> BusinessProfiles => Set<BusinessProfile>();
+    public DbSet<ProfileClaim> ProfileClaims => Set<ProfileClaim>();
 
     // Catalog
     public DbSet<CatalogItem> CatalogItems => Set<CatalogItem>();
     public DbSet<CatalogCategory> CatalogCategories => Set<CatalogCategory>();
     public DbSet<CatalogMedia> CatalogMedia => Set<CatalogMedia>();
 
-    // RFQ
+    // RFQ + quoting
     public DbSet<Rfq> Rfqs => Set<Rfq>();
     public DbSet<RfqItem> RfqItems => Set<RfqItem>();
     public DbSet<RfqTarget> RfqTargets => Set<RfqTarget>();
-
-    // Quotes
     public DbSet<Quote> Quotes => Set<Quote>();
     public DbSet<QuoteItem> QuoteItems => Set<QuoteItem>();
 
-    // Orders
-    public DbSet<Order> Orders => Set<Order>();
-    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
-    public DbSet<Invoice> Invoices => Set<Invoice>();
+    // Deal confirmations (terminal state — NexTrade stops here)
+    public DbSet<DealConfirmation> DealConfirmations => Set<DealConfirmation>();
 
-    // Network
+    // Network + trust
     public DbSet<Connection> Connections => Set<Connection>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<SavedSupplier> SavedSuppliers => Set<SavedSupplier>();
+    public DbSet<SupplierList> SupplierLists => Set<SupplierList>();
+    public DbSet<SavedSearch> SavedSearches => Set<SavedSearch>();
 
     // Compliance
     public DbSet<ComplianceDocument> ComplianceDocuments => Set<ComplianceDocument>();
@@ -47,10 +47,11 @@ public class AppDbContext(
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<Message> Messages => Set<Message>();
 
-    // Platform
+    // Platform reference
     public DbSet<Industry> Industries => Set<Industry>();
     public DbSet<Country> Countries => Set<Country>();
     public DbSet<Currency> Currencies => Set<Currency>();
+    public DbSet<GovernmentRegistryRecord> GovernmentRegistryRecords => Set<GovernmentRegistryRecord>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -65,14 +66,35 @@ public class AppDbContext(
         builder.Entity<Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>>().ToTable("role_claims");
         builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserToken<long>>().ToTable("user_tokens");
 
-        // Global query filters for tenant-scoped entities
         ApplyTenantFilters(builder);
 
         // Business
         builder.Entity<Business>(e =>
         {
+            e.HasIndex(b => b.Uid).IsUnique();
             e.HasIndex(b => b.Subdomain).IsUnique().HasFilter("subdomain IS NOT NULL");
             e.HasOne(b => b.Profile).WithOne(p => p.Business).HasForeignKey<BusinessProfile>(p => p.BusinessId);
+            e.HasOne(b => b.Industry).WithMany().HasForeignKey(b => b.IndustryId);
+            e.HasOne(b => b.SubIndustry).WithMany().HasForeignKey(b => b.SubIndustryId);
+        });
+
+        // BusinessProfile JSONB + pgvector
+        builder.Entity<BusinessProfile>(e =>
+        {
+            e.Property(p => p.Capabilities).HasColumnType("jsonb");
+            e.Property(p => p.Certifications).HasColumnType("jsonb");
+            e.Property(p => p.DeliveryRegions).HasColumnType("jsonb");
+            e.Property(p => p.AdditionalLocations).HasColumnType("jsonb");
+            e.Property(p => p.SocialLinks).HasColumnType("jsonb");
+            e.Property(p => p.Embedding).HasColumnType("vector(1536)");
+        });
+
+        // ProfileClaim
+        builder.Entity<ProfileClaim>(e =>
+        {
+            e.HasIndex(pc => pc.InviteToken).IsUnique();
+            e.HasIndex(pc => pc.BusinessUid);
+            e.HasIndex(pc => pc.RecipientEmail);
         });
 
         // Catalog
@@ -90,13 +112,24 @@ public class AppDbContext(
             e.HasOne(c => c.ParentCategory).WithMany(c => c.SubCategories).HasForeignKey(c => c.ParentCategoryId);
         });
 
-        // RFQ
-        builder.Entity<RfqItem>().Property(r => r.Specifications).HasColumnType("jsonb");
-
-        // Orders
-        builder.Entity<Order>(e =>
+        // RFQ + Quote
+        builder.Entity<Rfq>(e =>
         {
-            e.HasIndex(o => o.OrderNumber).IsUnique();
+            e.Property(r => r.Attachments).HasColumnType("jsonb");
+        });
+        builder.Entity<RfqItem>().Property(r => r.Specifications).HasColumnType("jsonb");
+        builder.Entity<Quote>(e =>
+        {
+            e.HasIndex(q => new { q.RfqId, q.TenantId }).IsUnique();
+            e.Property(q => q.Attachments).HasColumnType("jsonb");
+        });
+
+        // Deal confirmations
+        builder.Entity<DealConfirmation>(e =>
+        {
+            e.HasIndex(d => new { d.BuyerBusinessUid, d.SupplierBusinessUid, d.RfqId, d.QuoteId });
+            e.HasOne(d => d.Rfq).WithMany().HasForeignKey(d => d.RfqId);
+            e.HasOne(d => d.Quote).WithMany().HasForeignKey(d => d.QuoteId);
         });
 
         // Network (cross-tenant)
@@ -107,13 +140,35 @@ public class AppDbContext(
 
         builder.Entity<Review>(e =>
         {
-            e.HasIndex(r => new { r.ReviewerBusinessUid, r.OrderId }).IsUnique().HasFilter("order_id IS NOT NULL");
+            e.HasIndex(r => new { r.ReviewerBusinessUid, r.DealConfirmationId }).IsUnique();
+            e.HasOne(r => r.DealConfirmation).WithMany().HasForeignKey(r => r.DealConfirmationId);
         });
 
-        // Conversation
+        // Saved suppliers + lists + searches
+        builder.Entity<SavedSupplier>(e =>
+        {
+            e.HasIndex(s => new { s.TenantId, s.SupplierBusinessUid }).IsUnique();
+            e.HasOne(s => s.SupplierList).WithMany(l => l.Suppliers).HasForeignKey(s => s.SupplierListId);
+        });
+        builder.Entity<SupplierList>(e =>
+        {
+            e.HasIndex(l => new { l.TenantId, l.Name }).IsUnique();
+        });
+        builder.Entity<SavedSearch>(e =>
+        {
+            e.Property(s => s.SearchCriteria).HasColumnType("jsonb");
+            e.HasIndex(s => new { s.TenantId, s.Name }).IsUnique();
+        });
+
+        // Conversation + Message
         builder.Entity<Conversation>(e =>
         {
-            e.HasIndex(c => new { c.BusinessAUid, c.BusinessBUid, c.ContextType, c.ContextId }).IsUnique();
+            e.HasIndex(c => c.ConversationKey).IsUnique();
+            e.Property(c => c.ParticipantBusinessUids).HasColumnType("jsonb");
+        });
+        builder.Entity<Message>(e =>
+        {
+            e.Property(m => m.Attachments).HasColumnType("jsonb");
         });
 
         // Industry
@@ -123,16 +178,15 @@ public class AppDbContext(
             e.HasOne(i => i.Parent).WithMany(i => i.Children).HasForeignKey(i => i.ParentId);
         });
 
-        // Platform
+        // Platform reference
         builder.Entity<Country>().HasIndex(c => c.Code).IsUnique();
         builder.Entity<Currency>().HasIndex(c => c.Code).IsUnique();
 
-        // BusinessProfile JSONB columns
-        builder.Entity<BusinessProfile>(e =>
+        builder.Entity<GovernmentRegistryRecord>(e =>
         {
-            e.Property(p => p.Capabilities).HasColumnType("jsonb");
-            e.Property(p => p.Certifications).HasColumnType("jsonb");
-            e.Property(p => p.DeliveryRegions).HasColumnType("jsonb");
+            e.Property(g => g.Payload).HasColumnType("jsonb");
+            e.HasIndex(g => new { g.Source, g.RegistryId }).IsUnique();
+            e.HasIndex(g => g.LinkedBusinessUid);
         });
 
         // Enum string conversions
@@ -176,8 +230,10 @@ public class AppDbContext(
         builder.Entity<CatalogItem>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
         builder.Entity<Rfq>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
         builder.Entity<Quote>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
-        builder.Entity<Order>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
         builder.Entity<ComplianceDocument>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
+        builder.Entity<SavedSupplier>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
+        builder.Entity<SupplierList>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
+        builder.Entity<SavedSearch>().HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken ct = default)

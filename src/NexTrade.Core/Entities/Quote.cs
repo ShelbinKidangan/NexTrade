@@ -11,6 +11,9 @@ public class Quote : TenantEntity
     public DateTime? ValidUntil { get; set; }
     public string? Notes { get; set; }
 
+    /// <summary>JSONB list of attachment blob URLs.</summary>
+    public List<string> Attachments { get; set; } = [];
+
     // Navigation
     public Rfq Rfq { get; set; } = null!;
     public ICollection<QuoteItem> Items { get; set; } = [];

@@ -1,7 +1,10 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Infrastructure
+// pgvector/pgvector:pg17 — the plain postgres image lacks the vector extension our
+// CatalogItem.Embedding and BusinessProfile.Embedding columns require.
 var postgres = builder.AddPostgres("postgres")
+    .WithImage("pgvector/pgvector", "pg17")
     .WithDataVolume("nextrade-postgres-data")
     .WithPgAdmin(c => c.WithHostPort(5051));
 

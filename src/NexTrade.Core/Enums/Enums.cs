@@ -52,25 +52,6 @@ public enum QuoteStatus
     Withdrawn
 }
 
-public enum OrderStatus
-{
-    Created,
-    Confirmed,
-    InProgress,
-    Shipped,
-    Delivered,
-    Completed,
-    Cancelled
-}
-
-public enum InvoiceStatus
-{
-    Pending,
-    Paid,
-    Overdue,
-    Cancelled
-}
-
 public enum ConnectionType
 {
     Follow,
@@ -106,15 +87,14 @@ public enum ComplianceDocumentStatus
 public enum DocumentVisibility
 {
     Private,
-    ConnectionsOnly,
+    SharedOnRequest,
     Public
 }
 
 public enum ConversationContext
 {
     General,
-    Rfq,
-    Order
+    Rfq
 }
 
 public enum CompanySize
@@ -133,4 +113,30 @@ public enum UserRole
     Sales,
     Procurement,
     Member
+}
+
+public enum ProfileSource
+{
+    SelfRegistered,
+    S2PImport,
+    Claimed
+}
+
+public enum ProfileClaimStatus
+{
+    Pending,
+    Accepted,
+    Revoked,
+    Expired
+}
+
+public enum GovernmentRegistrySource
+{
+    MCA,
+    GST,
+    DGFT,
+    GeM,
+    Udyam,
+    MSME,
+    Other
 }

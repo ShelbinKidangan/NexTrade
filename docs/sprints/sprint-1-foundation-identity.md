@@ -1,6 +1,8 @@
-# Phase 1 — Foundation & Identity
+# Sprint 1 — Foundation & Identity
 
-> **Prerequisite phase for everything else.** No forward dependencies.
+> **Maps to PRD:** [Phase 1 — Identity + Seeding (MVP)](../PRD.md) — foundation slice only. This sprint lays the auth, tenancy, and reference-data substrate the rest of PRD Phase 1 builds on. Catalog and public profiles land in [Sprint 2](sprint-2-catalog-discovery.md), compliance vault in [Sprint 4](sprint-4-messaging-compliance-trust.md), and the AI-powered seeding features (S2P enrichment, Due Diligence tool, catalog builder) in [Sprint 6](sprint-6-ai-layer.md).
+>
+> **Prerequisite sprint for everything else.** No forward dependencies.
 
 ## Goal
 
@@ -23,8 +25,8 @@ A new business can self-register, log in, and edit its profile. A seeded platfor
 **Out:**
 
 - Catalog, discovery, RFQ, messaging, compliance.
-- Admin console functionality beyond the login + shell (full console is [Phase 5](phase-5-platform-admin-console.md)).
-- Any AI behaviour ([Phase 6](phase-6-ai-layer.md)).
+- Admin console functionality beyond the login + shell (full console is [Sprint 5](sprint-5-platform-admin-console.md)).
+- Any AI behaviour ([Sprint 6](sprint-6-ai-layer.md)).
 
 ## Backend work
 
@@ -34,7 +36,7 @@ A new business can self-register, log in, and edit its profile. A seeded platfor
 dotnet ef migrations add InitialSchema -p src/NexTrade.Infrastructure -s src/NexTrade.Api
 ```
 
-The migration must include: Identity tables, all domain tables for Core entities, `tsvector` columns + GIN indexes on searchable fields (populated in Phase 2 — columns exist now to avoid re-migration), pgvector extension enabled, and the `embedding vector(1536)` column on `catalog_items` (populated in Phase 6).
+The migration must include: Identity tables, all domain tables for Core entities, `tsvector` columns + GIN indexes on searchable fields (populated in [Sprint 2](sprint-2-catalog-discovery.md) — columns exist now to avoid re-migration), pgvector extension enabled, and the `embedding vector(1536)` column on `catalog_items` and `business_profiles` (populated in [Sprint 6](sprint-6-ai-layer.md)).
 
 **Identity:**
 
@@ -63,14 +65,14 @@ The migration must include: Identity tables, all domain tables for Core entities
 - [ui/src/app/(app)/profile/page.tsx](../../ui/src/app/(app)/profile/) — GET/PATCH business profile.
 - Create `ui/src/app/(admin)/layout.tsx` — admin shell (sidebar, header, logout).
 - Create `ui/src/app/(admin)/login/page.tsx` — separate from tenant login, posts to `/auth/admin-login`.
-- Create `ui/src/app/(admin)/dashboard/page.tsx` — placeholder panel ("Admin console — see Phase 5").
+- Create `ui/src/app/(admin)/dashboard/page.tsx` — placeholder panel ("Admin console — see [Sprint 5](sprint-5-platform-admin-console.md)").
 - Extend [ui/src/lib/api.ts](../../ui/src/lib/api.ts) — JWT storage, 401 handling, admin token separation.
 
 ## Data / migrations
 
 - Migration name: `InitialSchema`.
 - Seed data: ISO 3166 countries, ISO 4217 currencies, Level-1 industries (NAICS or UNSPSC top-level), default tenant-role template.
-- Indexes: unique on `users.email`, `businesses.slug`, `businesses.uid`; GIN placeholders on `catalog_items.search_vector` and `businesses.search_vector` (used in Phase 2).
+- Indexes: unique on `users.email`, `businesses.slug`, `businesses.uid`; GIN placeholders on `catalog_items.search_vector` and `businesses.search_vector` (used in [Sprint 2](sprint-2-catalog-discovery.md)).
 
 ## Reused utilities
 
@@ -84,7 +86,7 @@ The migration must include: Identity tables, all domain tables for Core entities
 - [ ] `POST /auth/register` → `POST /auth/login` → `GET /businesses/me` → `PATCH /businesses/me` works via curl or Scalar.
 - [ ] Seeded admin logs in at `POST /auth/admin-login`; returns a token with `platform_admin=true`.
 - [ ] Admin token on a tenant-scoped endpoint returns 403 (no tenant context).
-- [ ] Tenant token on `/admin/*` endpoints (added in Phase 5) returns 403.
+- [ ] Tenant token on `/admin/*` endpoints (added in [Sprint 5](sprint-5-platform-admin-console.md)) returns 403.
 - [ ] `GET /reference/industries`, `/reference/countries`, `/reference/currencies` return seeded data.
 - [ ] Frontend: register → land on dashboard; edit profile; reload page keeps session; log out clears token.
 - [ ] Frontend: `/admin/login` lets the seeded admin into the `(admin)/` shell.

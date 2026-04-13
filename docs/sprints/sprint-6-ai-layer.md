@@ -1,35 +1,43 @@
-# Phase 6 — AI Layer
+# Sprint 6 — AI Layer
 
-> **Depends on:** [Phase 1](phase-1-foundation-identity.md) through [Phase 5](phase-5-platform-admin-console.md).
+> **Maps to PRD:** Touches **all three PRD phases**:
+> - [PRD Phase 1 — Identity + Seeding](../PRD.md): profile enrichment from website, catalog builder from PDF, compliance document parser, semantic search, and the public Vendor Due Diligence tool.
+> - [PRD Phase 2 — Discovery + Engagement](../PRD.md): Smart RFQ generator, quote comparison assistant, RFQ auto-responder, AI matching.
+> - [PRD Phase 3 — Intelligence](../PRD.md): supplier analytics, buyer intelligence, pricing benchmarks, risk alerts, conversational analytics.
 >
-> **Philosophy:** Everything in this phase is **additive**. Nothing here is load-bearing for core flows — every AI surface must degrade gracefully to the non-AI behaviour delivered in earlier phases.
+> This sprint is deliberately placed last so Sprints 1–5 deliver a fully functional non-AI platform. Nothing here is load-bearing for core flows — every AI surface **must** degrade gracefully when the feature flag is off or the Claude API is unreachable.
+>
+> **Depends on:** [Sprint 1](sprint-1-foundation-identity.md) through [Sprint 5](sprint-5-platform-admin-console.md).
 
 ## Goal
 
-Layer AI intelligence across identity, discovery, engagement, and analytics. Claude API is the model backbone; embeddings populate the `catalog_items.embedding` column that has existed (unused) since [Phase 1](phase-1-foundation-identity.md).
+Layer AI intelligence across identity, discovery, engagement, and analytics. Claude API is the model backbone; embeddings populate the `catalog_items.embedding` and `business_profiles.embedding` columns that have existed (unused) since [Sprint 1](sprint-1-foundation-identity.md).
 
 ## Scope
 
-**Identity AI:**
+**Identity AI (PRD Phase 1):**
 
 - Profile enrichment consumer: supplier pastes a website URL → background job fetches the site, runs a Claude extraction pass, writes a structured draft profile the supplier can accept or edit.
 - Catalog builder: supplier uploads a PDF price list / brochure → draft [CatalogItem](../../src/NexTrade.Core/Entities/CatalogItem.cs) rows in `Draft` status.
 - Compliance document parser: certificate upload → auto-fill document type, issuer, issue date, expiry date. Supplier confirms before save.
+- S2P vendor import + enrichment pipeline chained off [ProfileClaim](../../src/NexTrade.Core/Entities/ProfileClaim.cs): raw vendor row → enriched draft → warm-invite email → claim flow.
 
-**Discovery AI:**
+**Discovery AI (PRD Phase 1 + 2):**
 
 - `CatalogItemEmbeddingConsumer` — listens for `CatalogItemPublishedEvent`, calls the embeddings API, writes to `catalog_items.embedding` (pgvector(1536), already present).
-- Hybrid search: extend `DiscoveryService` from [Phase 2](phase-2-catalog-discovery.md) to blend `ts_rank_cd` with cosine similarity. Feature-flag the blend so the pure-FTS fallback still works.
+- `BusinessProfileEmbeddingConsumer` — same idea for [BusinessProfile.Embedding](../../src/NexTrade.Core/Entities/BusinessProfile.cs).
+- Hybrid search: extend `DiscoveryService` from [Sprint 2](sprint-2-catalog-discovery.md) to blend `ts_rank_cd` with cosine similarity. Feature-flag the blend so the pure-FTS fallback still works.
 - Similar suppliers endpoint: `GET /discover/businesses/{uid}/similar` via embedding cosine.
-- **Vendor Due-Diligence Tool** (public, no login): paste a GSTIN or CIN → pipeline fetches from MCA / GST / DGFT / GeM / Udyam / MSME public endpoints → Claude synthesizes a readable report. Lands at [(public)/due-diligence](../../ui/src/app/(public)/due-diligence/) and is the primary non-auth buyer-acquisition hook.
+- **Vendor Due-Diligence Tool** (public, no login): paste a GSTIN or CIN → pipeline fetches from MCA / GST / DGFT / GeM / Udyam / MSME public endpoints (cached in [GovernmentRegistryRecord](../../src/NexTrade.Core/Entities/GovernmentRegistryRecord.cs)) → Claude synthesizes a readable report. Lands at [(public)/due-diligence](../../ui/src/app/(public)/due-diligence/) and is the primary non-auth buyer-acquisition hook.
+- Smart Alerts on [SavedSearch](../../src/NexTrade.Core/Entities/SavedSearch.cs): scheduled consumer re-runs the saved criteria, emails on new matches.
 
-**Engagement AI:**
+**Engagement AI (PRD Phase 2):**
 
-- Smart RFQ generator: plain-text requirement → structured [Rfq](../../src/NexTrade.Core/Entities/Rfq.cs) + [RfqItem](../../src/NexTrade.Core/Entities/RfqItem.cs) draft via Claude with tool-use.
-- Quote comparison assistant: augment the buyer comparison view from [Phase 3](phase-3-rfq-quoting.md) with a Claude-generated narrative summary (risks, total-cost-of-ownership, recommendation).
+- Smart RFQ generator: plain-text requirement → structured [Rfq](../../src/NexTrade.Core/Entities/Rfq.cs) + RfqItem draft via Claude with tool-use.
+- Quote comparison assistant: augment the buyer comparison view from [Sprint 3](sprint-3-rfq-quoting.md) with a Claude-generated narrative summary (risks, total-cost-of-ownership, recommendation).
 - RFQ auto-responder: supplier-side opt-in. New RFQ arrives → Claude drafts a quote using the supplier's catalog; supplier reviews and submits.
 
-**Intelligence AI:**
+**Intelligence AI (PRD Phase 3):**
 
 - Supplier analytics page at [(app)/intelligence](../../ui/src/app/(app)/intelligence/): view counts, inquiry conversion, response rate, quote win rate, competitive positioning.
 - Buyer intelligence: risk alerts (supplier trust dip, compliance expiring, negative review cluster), alternative-supplier recommendations.
@@ -37,9 +45,9 @@ Layer AI intelligence across identity, discovery, engagement, and analytics. Cla
 
 **Admin AI surfaces:**
 
-- AI usage dashboard in the admin console from [Phase 5](phase-5-platform-admin-console.md): token spend per feature, per tenant, per model.
+- AI usage dashboard in the admin console from [Sprint 5](sprint-5-platform-admin-console.md): token spend per feature, per tenant, per model.
 - Prompt template management: centralized templates with version history.
-- Auto-moderation suggestions: catalog items / reviews flagged by a classifier surface in the [Phase 5](phase-5-platform-admin-console.md) moderation queue with a confidence score.
+- Auto-moderation suggestions: catalog items / reviews flagged by a classifier surface in the [Sprint 5](sprint-5-platform-admin-console.md) moderation queue with a confidence score.
 
 ## Out of scope
 
@@ -62,9 +70,11 @@ Layer AI intelligence across identity, discovery, engagement, and analytics. Cla
 
 - `ProfileEnrichmentConsumer` — handles `ProfileEnrichmentRequestedEvent`.
 - `CatalogBuilderConsumer` — handles `CatalogBuilderRequestedEvent` (PDF → items).
-- `ComplianceDocumentParseConsumer` — handles `ComplianceUploadedEvent` (chained from [Phase 4](phase-4-messaging-compliance-trust.md) upload).
-- `CatalogItemEmbeddingConsumer` — handles `CatalogItemPublishedEvent` (chained from [Phase 2](phase-2-catalog-discovery.md) publish action).
+- `ComplianceDocumentParseConsumer` — handles `ComplianceUploadedEvent` (chained from [Sprint 4](sprint-4-messaging-compliance-trust.md) upload).
+- `CatalogItemEmbeddingConsumer` — handles `CatalogItemPublishedEvent` (chained from [Sprint 2](sprint-2-catalog-discovery.md) publish action).
+- `BusinessProfileEmbeddingConsumer` — embeds BusinessProfile content on profile update.
 - `TrustRiskMonitorConsumer` — scheduled daily, emits alerts.
+- `SavedSearchAlertConsumer` — scheduled, walks tenant [SavedSearch](../../src/NexTrade.Core/Entities/SavedSearch.cs) rows with `NotifyOnNewResults = true`.
 
 **Controllers:**
 
@@ -84,6 +94,8 @@ Layer AI intelligence across identity, discovery, engagement, and analytics. Cla
 - `src/NexTrade.Consumers/Ai/CatalogBuilderConsumer.cs`
 - `src/NexTrade.Consumers/Ai/ComplianceDocumentParseConsumer.cs`
 - `src/NexTrade.Consumers/Ai/CatalogItemEmbeddingConsumer.cs`
+- `src/NexTrade.Consumers/Ai/BusinessProfileEmbeddingConsumer.cs`
+- `src/NexTrade.Consumers/Ai/SavedSearchAlertConsumer.cs`
 - `src/NexTrade.Consumers/Ai/TrustRiskMonitorConsumer.cs`
 - `src/NexTrade.Core/Entities/AiUsageEntry.cs`
 - `src/NexTrade.Core/Entities/PromptTemplate.cs`
@@ -105,15 +117,16 @@ Layer AI intelligence across identity, discovery, engagement, and analytics. Cla
 
 - Migration name: `AiLayer`.
 - New tables: `ai_usage_entries`, `prompt_templates`, `due_diligence_reports` (cached by GSTIN/CIN with TTL).
-- Ensure pgvector extension is enabled (already in [Phase 1](phase-1-foundation-identity.md) initial migration) and IVFFlat index on `catalog_items.embedding`.
+- Ensure pgvector extension is enabled (already in [Sprint 1](sprint-1-foundation-identity.md) initial migration) and IVFFlat indexes on `catalog_items.embedding` and `business_profiles.embedding`.
 
 ## Reused utilities
 
 - [ServiceResult](../../src/NexTrade.Infrastructure/Services/ServiceResult.cs) — all AI service methods return wrapped results (so failures degrade gracefully).
-- `DiscoveryService` from [Phase 2](phase-2-catalog-discovery.md) — extended, not replaced.
-- MassTransit bus from [Phase 3](phase-3-rfq-quoting.md) onward — every AI task runs as a consumer.
-- Blob storage abstraction from [Phase 2](phase-2-catalog-discovery.md) / [Phase 4](phase-4-messaging-compliance-trust.md) — for PDF ingestion.
-- Platform-admin policy + audit-log middleware from [Phase 5](phase-5-platform-admin-console.md) for AI admin surfaces.
+- `DiscoveryService` from [Sprint 2](sprint-2-catalog-discovery.md) — extended, not replaced.
+- MassTransit bus from [Sprint 3](sprint-3-rfq-quoting.md) onward — every AI task runs as a consumer.
+- Blob storage abstraction from [Sprint 2](sprint-2-catalog-discovery.md) / [Sprint 4](sprint-4-messaging-compliance-trust.md) — for PDF ingestion.
+- Platform-admin policy + audit-log middleware from [Sprint 5](sprint-5-platform-admin-console.md) for AI admin surfaces.
+- [GovernmentRegistryRecord](../../src/NexTrade.Core/Entities/GovernmentRegistryRecord.cs) cache table (schema from Sprint 1) — populated here by the due-diligence pipeline.
 - `claude-api` skill guidance for prompt caching, tool use, and Managed Agents (load it before touching Claude calls).
 
 ## Exit criteria
@@ -127,7 +140,7 @@ Layer AI intelligence across identity, discovery, engagement, and analytics. Cla
 - [ ] Quote comparison view shows an AI narrative that references each quote by supplier name.
 - [ ] Intelligence dashboard loads and answers a natural-language question about own data.
 - [ ] Admin AI usage dashboard shows non-zero token counts broken down by feature.
-- [ ] Disabling the AI feature flag on any surface falls back to the non-AI behaviour from earlier phases without errors.
+- [ ] Disabling the AI feature flag on any surface falls back to the non-AI behaviour from earlier sprints without errors.
 
 ## Verification
 
@@ -142,8 +155,8 @@ Exercise every AI surface with a flag-on / flag-off toggle and confirm graceful 
 
 ## Dependencies
 
-- Every prior phase supplies the data and surfaces this layer enriches. In particular:
-  - [Phase 2](phase-2-catalog-discovery.md) — catalog items and the FTS infrastructure that hybrid search extends.
-  - [Phase 3](phase-3-rfq-quoting.md) — RFQ + quote objects that the engagement AI drafts.
-  - [Phase 4](phase-4-messaging-compliance-trust.md) — compliance upload pipeline and trust score signals that risk monitoring reads.
-  - [Phase 5](phase-5-platform-admin-console.md) — admin console this phase extends with AI surfaces.
+- Every prior sprint supplies the data and surfaces this layer enriches. In particular:
+  - [Sprint 2](sprint-2-catalog-discovery.md) — catalog items and the FTS infrastructure that hybrid search extends.
+  - [Sprint 3](sprint-3-rfq-quoting.md) — RFQ + quote objects that the engagement AI drafts.
+  - [Sprint 4](sprint-4-messaging-compliance-trust.md) — compliance upload pipeline and trust score signals that risk monitoring reads.
+  - [Sprint 5](sprint-5-platform-admin-console.md) — admin console this sprint extends with AI surfaces.

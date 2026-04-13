@@ -12,6 +12,9 @@ public class Rfq : TenantEntity
     public string? DeliveryLocation { get; set; }
     public string? DeliveryTimeline { get; set; }
 
+    /// <summary>JSONB list of attachment blob URLs (specs, drawings, etc.).</summary>
+    public List<string> Attachments { get; set; } = [];
+
     // Navigation
     public ICollection<RfqItem> Items { get; set; } = [];
     public ICollection<RfqTarget> Targets { get; set; } = [];

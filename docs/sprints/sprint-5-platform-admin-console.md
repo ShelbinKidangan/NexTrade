@@ -1,12 +1,14 @@
-# Phase 5 — Platform Admin Console
+# Sprint 5 — Platform Admin Console
 
-> **Depends on:** [Phase 1](phase-1-foundation-identity.md) through [Phase 4](phase-4-messaging-compliance-trust.md).
+> **Maps to PRD:** Cross-cutting. The PRD does not call out "platform admin" as its own phase — this sprint supports moderation and verification workflows across [PRD Phase 1](../PRD.md) (business verification, compliance review, reference-data curation) and [PRD Phase 2](../PRD.md) (content moderation, trust-score oversight). It consolidates admin surfaces scattered across earlier sprints into one operations console.
+>
+> **Depends on:** [Sprint 1](sprint-1-foundation-identity.md) through [Sprint 4](sprint-4-messaging-compliance-trust.md).
 
 ## Goal
 
 Platform admins get a full cross-tenant operations console. They can verify businesses, review compliance documents in a queue, moderate content, manage reference-data taxonomies, manage users across tenants, and see platform-wide KPIs. Every admin write is captured in an audit log.
 
-This phase **consolidates** admin functionality that was deliberately left minimal in earlier phases (for example, the single-record compliance verify endpoint from [Phase 4](phase-4-messaging-compliance-trust.md) is now fronted by a real queue UI with bulk actions).
+This sprint **consolidates** admin functionality that was deliberately left minimal in earlier sprints (for example, the single-record compliance verify endpoint from [Sprint 4](sprint-4-messaging-compliance-trust.md) is now fronted by a real queue UI with bulk actions).
 
 ## Scope
 
@@ -15,15 +17,15 @@ This phase **consolidates** admin functionality that was deliberately left minim
 - Admin business management: cross-tenant list, search, filter by status, verify / suspend / unsuspend / soft-delete, view per-business audit log.
 - Admin verification queue for compliance documents: filter by type, age, country, tenant; approve / reject with reason; bulk approve.
 - Reference-data management: [Industry](../../src/NexTrade.Core/Entities/Industry.cs) tree, [Country](../../src/NexTrade.Core/Entities/Country.cs), [Currency](../../src/NexTrade.Core/Entities/Currency.cs), [CatalogCategory](../../src/NexTrade.Core/Entities/CatalogCategory.cs) tree — CRUD + reorder.
-- Admin user management: cross-tenant user lookup by email, lockout clear, password reset, promote/demote platform admin, impersonation is **out** for this phase.
+- Admin user management: cross-tenant user lookup by email, lockout clear, password reset, promote/demote platform admin, impersonation is **out** for this sprint.
 - Content moderation: hide / flag / delete catalog items, RFQs, reviews. Soft-delete only; hard-delete requires two-admin approval (defer hard-delete to backlog).
 - Platform metrics dashboard: registered businesses (total + 30d delta), published catalog items, open RFQs, average quote response time, MAU, trust-score distribution, verified-badge rate.
 - Audit log: every admin write goes through a middleware that records `(admin_user_id, action, target_entity, target_uid, payload_json, timestamp)`.
-- Frontend: full `(admin)/` route tree replacing the placeholder shell from [Phase 1](phase-1-foundation-identity.md).
+- Frontend: full `(admin)/` route tree replacing the placeholder shell from [Sprint 1](sprint-1-foundation-identity.md).
 
 **Out:**
 
-- AI-driven anomaly detection, auto-moderation, auto-enrichment audits — [Phase 6](phase-6-ai-layer.md).
+- AI-driven anomaly detection, auto-moderation, auto-enrichment audits — [Sprint 6](sprint-6-ai-layer.md).
 - Billing, plan management, rate-limit controls — backlog, not in the roadmap.
 - Admin impersonation / "log in as user" — backlog.
 
@@ -78,7 +80,7 @@ This phase **consolidates** admin functionality that was deliberately left minim
 - `ui/src/app/(admin)/content/page.tsx` — moderation tabs: catalog / RFQs / reviews.
 - `ui/src/app/(admin)/reference-data/page.tsx` — taxonomy editors with tree reorder (DnD).
 - `ui/src/app/(admin)/audit-log/page.tsx` — global audit trail.
-- Admin API module in `ui/src/lib/api.ts` — `admin.*` namespace using the admin token from [Phase 1](phase-1-foundation-identity.md).
+- Admin API module in `ui/src/lib/api.ts` — `admin.*` namespace using the admin token from [Sprint 1](sprint-1-foundation-identity.md).
 
 ## Data / migrations
 
@@ -92,14 +94,14 @@ This phase **consolidates** admin functionality that was deliberately left minim
 - [ServiceResult](../../src/NexTrade.Infrastructure/Services/ServiceResult.cs) — all admin service methods.
 - [QueryExtensions.ToPagedResultAsync](../../src/NexTrade.Infrastructure/Services/QueryExtensions.cs) — every admin list endpoint.
 - [QueryExtensions.ResolveRefAsync](../../src/NexTrade.Infrastructure/Services/QueryExtensions.cs) — Uid resolution inside admin payloads.
-- Platform-admin policy and seeded admin account from [Phase 1](phase-1-foundation-identity.md).
-- Trust-score recompute service from [Phase 4](phase-4-messaging-compliance-trust.md) — admins can trigger an on-demand recompute from the business detail page.
+- Platform-admin policy and seeded admin account from [Sprint 1](sprint-1-foundation-identity.md).
+- Trust-score recompute service from [Sprint 4](sprint-4-messaging-compliance-trust.md) — admins can trigger an on-demand recompute from the business detail page.
 
 ## Exit criteria
 
-- [ ] Admin logs in at `/admin/login` (from [Phase 1](phase-1-foundation-identity.md)), lands on populated dashboard.
+- [ ] Admin logs in at `/admin/login` (from [Sprint 1](sprint-1-foundation-identity.md)), lands on populated dashboard.
 - [ ] Admin opens verification queue, approves a pending compliance doc in bulk mode; supplier's public profile flips to Verified.
-- [ ] Admin edits an Industry taxonomy entry; discovery filters in [Phase 2](phase-2-catalog-discovery.md) reflect the change.
+- [ ] Admin edits an Industry taxonomy entry; discovery filters in [Sprint 2](sprint-2-catalog-discovery.md) reflect the change.
 - [ ] Admin suspends a business; that business's users cannot log in; their public profile returns 404.
 - [ ] Admin flags a catalog item; item disappears from discovery results, stays visible to its owner as `Flagged`.
 - [ ] Every write action above appears in the audit log with correct `admin_user_id` and payload.
@@ -114,9 +116,9 @@ cd src/NexTrade.AppHost && dotnet run
 cd ui && npm run dev
 ```
 
-Seed a handful of businesses / items / RFQs from [Phases 2–4](phase-2-catalog-discovery.md), then run through every admin action in the browser. Cross-check the audit log after each write.
+Seed a handful of businesses / items / RFQs from [Sprints 2–4](sprint-2-catalog-discovery.md), then run through every admin action in the browser. Cross-check the audit log after each write.
 
 ## Dependencies
 
-- All prior phases contribute the data and surfaces this console operates over.
-- Platform-admin identity from [Phase 1](phase-1-foundation-identity.md) is load-bearing; without the policy, nothing in this phase is reachable.
+- All prior sprints contribute the data and surfaces this console operates over.
+- Platform-admin identity from [Sprint 1](sprint-1-foundation-identity.md) is load-bearing; without the policy, nothing in this sprint is reachable.
