@@ -10,11 +10,14 @@ import { useAuth } from "@/lib/auth";
 import { ThemeSwitcher } from "@/components/app/theme-switcher";
 
 const navItems = [
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Discover", href: "/discover" },
   { label: "Catalog", href: "/catalog" },
   { label: "RFQs", href: "/rfqs" },
+  { label: "Suppliers", href: "/suppliers" },
   { label: "Messages", href: "/messages" },
-  { label: "Network", href: "/connections" },
+  { label: "Compliance", href: "/compliance" },
+  { label: "Intelligence", href: "/intelligence" },
 ];
 
 export function TopNav() {
@@ -64,14 +67,21 @@ export function TopNav() {
 
           {/* User menu */}
           <div className="hidden md:flex items-center gap-2 pl-2 border-l border-border">
-            <div className="flex size-7 items-center justify-center rounded-full bg-accent-subtle text-accent text-xs font-medium">
-              {user?.fullName?.charAt(0) || "U"}
-            </div>
+            <Link href="/profile" className="flex size-7 items-center justify-center rounded-full bg-accent-subtle text-accent text-xs font-medium hover:ring-2 hover:ring-accent/30">
+              {user?.fullName?.charAt(0) || business?.name?.charAt(0) || "N"}
+            </Link>
             <div className="text-xs">
-              <div className="font-medium text-foreground truncate max-w-[120px]">{business?.name}</div>
-              <button onClick={logout} className="text-foreground-tertiary hover:text-danger transition-colors">
-                Sign out
-              </button>
+              <Link href="/profile" className="block font-medium text-foreground truncate max-w-[120px] hover:text-accent">
+                {business?.name || "My Business"}
+              </Link>
+              <div className="flex gap-2">
+                <Link href="/settings" className="text-foreground-tertiary hover:text-foreground transition-colors">
+                  Settings
+                </Link>
+                <button onClick={logout} className="text-foreground-tertiary hover:text-danger transition-colors">
+                  Sign out
+                </button>
+              </div>
             </div>
           </div>
 

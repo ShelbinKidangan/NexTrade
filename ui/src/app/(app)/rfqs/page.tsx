@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { FileText, Calendar, MapPin, Plus, Globe, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +81,8 @@ export default function RfqsPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((rfq) => (
-            <Card key={rfq.uid} className="transition-all hover:border-border-strong hover:shadow-sm cursor-pointer">
+            <Link key={rfq.uid} href={`/rfqs/${rfq.uid}`} className="block">
+            <Card className="transition-all hover:border-border-strong hover:shadow-sm cursor-pointer">
               <CardContent className="pt-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
@@ -120,6 +122,7 @@ export default function RfqsPage() {
                 </div>
               </CardContent>
             </Card>
+            </Link>
           ))}
         </div>
       )}

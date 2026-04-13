@@ -358,6 +358,67 @@ export const mockCatalogItems: CatalogItemDto[] = [
   },
 ];
 
+// ─── Catalog metadata (seller, specs, tags, images) ───────────────────────────
+
+export interface MockCatalogMeta {
+  sellerUid: string;
+  specifications: Record<string, string>;
+  tags: string[];
+  colorGradient: [string, string];
+  rating: number;
+  reviewCount: number;
+}
+
+export const mockCatalogMeta: Record<string, MockCatalogMeta> = {
+  "cat-1": { sellerUid: "biz-acme-metals", specifications: { Material: "6061-T6 Aluminum", Finish: "Anodized", Tolerance: "±0.02mm", "Max dim": "300×200×80mm" }, tags: ["Aerospace", "Automotive", "ISO 9001", "Small batch"], colorGradient: ["#6366f1", "#8b5cf6"], rating: 4.9, reviewCount: 42 },
+  "cat-2": { sellerUid: "biz-acme-metals", specifications: { Certifications: "ISO 9001, AS9100D", "Batch size": "50–5000", Traceability: "Full CoC", Industries: "Aerospace, Medical" }, tags: ["ISO 9001", "AS9100D", "Full traceability"], colorGradient: ["#10b981", "#3b82f6"], rating: 4.8, reviewCount: 28 },
+  "cat-3": { sellerUid: "biz-acme-metals", specifications: { Material: "316 Stainless Steel", IP: "IP65", "Wall thickness": "1.6mm", "Door type": "Hinged / bolted" }, tags: ["IP65", "Outdoor", "Stainless", "316L"], colorGradient: ["#0ea5e9", "#6366f1"], rating: 4.7, reviewCount: 18 },
+  "cat-4": { sellerUid: "biz-steelworks", specifications: { Material: "Mild / HT steel", Thickness: "6–25mm", Process: "CNC laser cut", Tolerance: "±0.1mm" }, tags: ["Structural", "Laser cut", "High volume"], colorGradient: ["#f59e0b", "#ef4444"], rating: 4.5, reviewCount: 35 },
+  "cat-5": { sellerUid: "biz-acme-metals", specifications: { "Color system": "RAL", Process: "Electrostatic spray", Testing: "Salt-spray 500h", "Max part": "3m × 1.2m" }, tags: ["RAL", "Salt-spray", "Industrial"], colorGradient: ["#ec4899", "#f59e0b"], rating: 4.6, reviewCount: 14 },
+  "cat-6": { sellerUid: "biz-steelworks", specifications: { Process: "MIG/TIG", Material: "MS, SS, Aluminum", Inspection: "CMM + FPI", "Max size": "2.4 × 1.8m" }, tags: ["MIG/TIG", "CMM inspected", "Welded"], colorGradient: ["#8b5cf6", "#0ea5e9"], rating: 4.7, reviewCount: 22 },
+  "cat-7": { sellerUid: "biz-acme-metals", specifications: { Alloy: "6063-T5", "Profile types": "Rectangular / T / U / I", Finish: "Anodized / mill", "Max length": "6m" }, tags: ["Extrusion", "Anodized", "Custom profile"], colorGradient: ["#14b8a6", "#3b82f6"], rating: 4.4, reviewCount: 9 },
+  "cat-8": { sellerUid: "biz-robotica", specifications: { Equipment: "GOM ATOS, Laser", Accuracy: "±0.03mm", "CAD output": "STEP, IGES, SLDPRT", Turnaround: "5–10 days" }, tags: ["GOM", "Reverse engineering", "CAD"], colorGradient: ["#f43f5e", "#8b5cf6"], rating: 4.9, reviewCount: 16 },
+  "cat-9": { sellerUid: "biz-acme-metals", specifications: { Material: "Cast iron", Size: "DN50–DN300", Standard: "ANSI / DIN" }, tags: ["Legacy", "Replaced"], colorGradient: ["#6b7280", "#9ca3af"], rating: 4.0, reviewCount: 3 },
+  // New items across other sellers
+  "cat-10": { sellerUid: "biz-fastpack", specifications: { Type: "Stand-up pouch with zipper", Film: "PET/PE/EVOH", MOQ: "10,000 pcs", Print: "Up to 8 colors", "Food-grade": "Yes" }, tags: ["Food grade", "Zipper", "Printed", "Biodegradable"], colorGradient: ["#22c55e", "#14b8a6"], rating: 4.8, reviewCount: 31 },
+  "cat-11": { sellerUid: "biz-fastpack", specifications: { Material: "HDPE / PP", Capacity: "250ml – 5L", "Neck finish": "28mm / 38mm", "Pharma grade": "Optional" }, tags: ["Rigid", "Pharma", "Food-grade"], colorGradient: ["#0891b2", "#3b82f6"], rating: 4.6, reviewCount: 18 },
+  "cat-12": { sellerUid: "biz-electrocore", specifications: { Service: "SMT + through-hole", "Board layers": "1–12", "BGA/QFN": "Yes", "Min lot": "10 boards", "IPC class": "Class 3" }, tags: ["SMT", "IPC Class 3", "Prototype to production"], colorGradient: ["#3b82f6", "#8b5cf6"], rating: 4.9, reviewCount: 47 },
+  "cat-13": { sellerUid: "biz-electrocore", specifications: { Type: "Authorized distribution", Brands: "TI, ST, NXP, Infineon, Microchip", Leadtime: "1–6 weeks", Packaging: "T&R, Tube, Tray" }, tags: ["Authorized", "Semiconductors", "In-stock"], colorGradient: ["#ec4899", "#6366f1"], rating: 4.7, reviewCount: 62 },
+  "cat-14": { sellerUid: "biz-logistix", specifications: { Route: "Asia ↔ Europe / Americas", "Container types": "20GP, 40GP, 40HC, 40RF", Incoterms: "FOB / CIF / DDP", "Dangerous goods": "Certified" }, tags: ["Ocean freight", "DG certified", "Door-to-door"], colorGradient: ["#0ea5e9", "#06b6d4"], rating: 4.6, reviewCount: 55 },
+  "cat-15": { sellerUid: "biz-logistix", specifications: { "Warehouse locations": "12 across South Asia", "Total area": "540,000 sqft", "Temperature controlled": "Available", WMS: "SAP EWM" }, tags: ["3PL", "WMS", "SA coverage"], colorGradient: ["#f59e0b", "#ef4444"], rating: 4.5, reviewCount: 29 },
+  "cat-16": { sellerUid: "biz-solargrid", specifications: { "Panel type": "Monocrystalline", "Power range": "540W – 600W", "Warranty product": "12 years", "Warranty output": "25 years", "Tier-1": "Yes" }, tags: ["Tier-1", "Monocrystalline", "25-yr warranty"], colorGradient: ["#f59e0b", "#eab308"], rating: 4.7, reviewCount: 24 },
+  "cat-17": { sellerUid: "biz-solargrid", specifications: { Service: "Turnkey EPC", "Capacity range": "100kW – 5MW", Warranty: "5 years O&M", Coverage: "Pan-India" }, tags: ["EPC", "Turnkey", "O&M included"], colorGradient: ["#f97316", "#f59e0b"], rating: 4.6, reviewCount: 19 },
+  "cat-18": { sellerUid: "biz-textilehub", specifications: { Fabric: "100% GOTS Organic Cotton", GSM: "140–260", Certifications: "GOTS, SA8000, Fair Trade", MOQ: "500 pcs/color" }, tags: ["GOTS", "SA8000", "Organic", "Knitted"], colorGradient: ["#84cc16", "#22c55e"], rating: 4.8, reviewCount: 38 },
+  "cat-19": { sellerUid: "biz-robotica", specifications: { "Cell type": "Robotic assembly / palletizing", Controllers: "Siemens / Rockwell / Mitsubishi", Integration: "Turnkey", Commissioning: "Included" }, tags: ["Turnkey", "Robot cells", "PLC + Vision"], colorGradient: ["#6366f1", "#a855f7"], rating: 4.9, reviewCount: 17 },
+  "cat-20": { sellerUid: "biz-cloudforge", specifications: { Service: "Cloud migration", Partner: "AWS Advanced", "SOC 2": "Type II", Methodology: "6R framework" }, tags: ["AWS", "SOC 2", "DevOps"], colorGradient: ["#2563eb", "#06b6d4"], rating: 4.8, reviewCount: 26 },
+  "cat-21": { sellerUid: "biz-medequip", specifications: { Standard: "ISO 13485", "Class": "IIa / IIb", "CE Marking": "Available", "Sterile packaging": "Yes" }, tags: ["ISO 13485", "CE", "OEM/ODM"], colorGradient: ["#14b8a6", "#0ea5e9"], rating: 4.8, reviewCount: 21 },
+  "cat-22": { sellerUid: "biz-greenchem", specifications: { Form: "Liquid concentrate", Packaging: "5L / 20L / 200L drum", Certifications: "REACH, GMP", "Private label": "Yes" }, tags: ["Eco-friendly", "REACH", "Private label"], colorGradient: ["#10b981", "#84cc16"], rating: 4.3, reviewCount: 12 },
+};
+
+const additionalCatalogItems: CatalogItemDto[] = [
+  { uid: "cat-10", type: "Product", title: "Food-Grade Stand-Up Pouch with Zipper", description: "Custom-printed multi-layer pouches for snacks, pet food, and dry goods. Barrier films available.", category: "Flexible Packaging", pricingType: "Range", priceMin: 0.08, priceMax: 0.22, currencyCode: "USD", minOrderQuantity: 10000, leadTimeDays: 21, status: "Published", viewCount: 512, inquiryCount: 24, primaryImageUrl: null, createdAt: "2026-02-14T10:00:00Z" },
+  { uid: "cat-11", type: "Product", title: "Rigid HDPE Containers — Pharma Grade", description: "ISO 15378 compliant HDPE bottles for nutraceutical and pharma applications.", category: "Rigid Packaging", pricingType: "Range", priceMin: 0.35, priceMax: 1.20, currencyCode: "USD", minOrderQuantity: 5000, leadTimeDays: 28, status: "Published", viewCount: 284, inquiryCount: 11, primaryImageUrl: null, createdAt: "2026-02-20T10:00:00Z" },
+  { uid: "cat-12", type: "Service", title: "PCB Assembly — SMT & Through-Hole", description: "Contract PCB assembly from prototype to production. IPC Class 2/3.", category: "Electronics Manufacturing", pricingType: "ContactForQuote", priceMin: null, priceMax: null, currencyCode: null, minOrderQuantity: 10, leadTimeDays: 10, status: "Published", viewCount: 687, inquiryCount: 32, primaryImageUrl: null, createdAt: "2026-01-30T10:00:00Z" },
+  { uid: "cat-13", type: "Product", title: "Semiconductor Component Sourcing", description: "Authorized distribution for TI, ST, NXP, Infineon and 40+ brands. Franchise stock.", category: "Electronic Components", pricingType: "ContactForQuote", priceMin: null, priceMax: null, currencyCode: null, minOrderQuantity: null, leadTimeDays: 7, status: "Published", viewCount: 823, inquiryCount: 41, primaryImageUrl: null, createdAt: "2026-01-12T10:00:00Z" },
+  { uid: "cat-14", type: "Service", title: "Ocean Freight — Asia to Europe & Americas", description: "Weekly sailings from JNPT, Chennai, and Mundra. Full container and LCL.", category: "Freight Forwarding", pricingType: "ContactForQuote", priceMin: null, priceMax: null, currencyCode: null, minOrderQuantity: null, leadTimeDays: 28, status: "Published", viewCount: 445, inquiryCount: 19, primaryImageUrl: null, createdAt: "2026-02-01T10:00:00Z" },
+  { uid: "cat-15", type: "Service", title: "3PL Warehousing & Fulfillment", description: "12 warehouses across South Asia with WMS integration. Temperature controlled zones available.", category: "Warehousing", pricingType: "ContactForQuote", priceMin: null, priceMax: null, currencyCode: null, minOrderQuantity: null, leadTimeDays: 5, status: "Published", viewCount: 298, inquiryCount: 13, primaryImageUrl: null, createdAt: "2026-02-18T10:00:00Z" },
+  { uid: "cat-16", type: "Product", title: "Tier-1 Monocrystalline Solar Panels (540W+)", description: "Bifacial monocrystalline panels with 25-year warranty. Tier-1 BloombergNEF listed.", category: "Solar Equipment", pricingType: "Range", priceMin: 0.21, priceMax: 0.28, currencyCode: "USD", minOrderQuantity: 500, leadTimeDays: 45, status: "Published", viewCount: 612, inquiryCount: 27, primaryImageUrl: null, createdAt: "2026-03-02T10:00:00Z" },
+  { uid: "cat-17", type: "Service", title: "Commercial Solar EPC — Rooftop & Ground Mount", description: "Turnkey EPC from site survey to grid connection. 100kW to 5MW projects.", category: "Renewable Energy Services", pricingType: "ContactForQuote", priceMin: null, priceMax: null, currencyCode: null, minOrderQuantity: null, leadTimeDays: 90, status: "Published", viewCount: 367, inquiryCount: 21, primaryImageUrl: null, createdAt: "2026-03-10T10:00:00Z" },
+  { uid: "cat-18", type: "Product", title: "GOTS-Certified Organic Cotton Knitwear", description: "Private-label knitted garments from GOTS-certified organic cotton. SA8000 compliant facility.", category: "Apparel", pricingType: "Range", priceMin: 3.40, priceMax: 12.80, currencyCode: "USD", minOrderQuantity: 500, leadTimeDays: 60, status: "Published", viewCount: 394, inquiryCount: 17, primaryImageUrl: null, createdAt: "2026-03-05T10:00:00Z" },
+  { uid: "cat-19", type: "Service", title: "Robotic Assembly Cell Integration", description: "Turnkey robotic assembly cells and palletizing systems. PLC + vision integrated.", category: "Industrial Automation", pricingType: "ContactForQuote", priceMin: null, priceMax: null, currencyCode: null, minOrderQuantity: null, leadTimeDays: 120, status: "Published", viewCount: 254, inquiryCount: 14, primaryImageUrl: null, createdAt: "2026-02-26T10:00:00Z" },
+  { uid: "cat-20", type: "Service", title: "AWS Cloud Migration — Enterprise 6R", description: "End-to-end AWS migration services using the 6R framework. SOC 2 Type II.", category: "Cloud Services", pricingType: "ContactForQuote", priceMin: null, priceMax: null, currencyCode: null, minOrderQuantity: null, leadTimeDays: 60, status: "Published", viewCount: 412, inquiryCount: 22, primaryImageUrl: null, createdAt: "2026-03-15T10:00:00Z" },
+  { uid: "cat-21", type: "Product", title: "ISO 13485 Diagnostic Instrument (OEM/ODM)", description: "CE-marked diagnostic instruments for OEM/ODM. Class IIa medical device.", category: "Medical Devices", pricingType: "ContactForQuote", priceMin: null, priceMax: null, currencyCode: null, minOrderQuantity: 100, leadTimeDays: 75, status: "Published", viewCount: 189, inquiryCount: 9, primaryImageUrl: null, createdAt: "2026-03-20T10:00:00Z" },
+  { uid: "cat-22", type: "Product", title: "Eco-Friendly Industrial Cleaner Concentrate", description: "REACH-compliant eco-friendly cleaner concentrate. Private labeling available.", category: "Specialty Chemicals", pricingType: "Range", priceMin: 3.20, priceMax: 4.80, currencyCode: "USD", minOrderQuantity: 500, leadTimeDays: 14, status: "Published", viewCount: 167, inquiryCount: 8, primaryImageUrl: null, createdAt: "2026-03-25T10:00:00Z" },
+];
+
+mockCatalogItems.push(...additionalCatalogItems);
+
+export function getCatalogSeller(itemUid: string): BusinessDto | undefined {
+  const meta = mockCatalogMeta[itemUid];
+  if (!meta) return undefined;
+  return mockBusinesses.find((b) => b.uid === meta.sellerUid);
+}
+
 export interface MockRfq {
   uid: string;
   title: string;
@@ -641,6 +702,360 @@ export function mockPaged<T>(items: T[], page = 1, pageSize = 20): PagedResult<T
     hasPrevious: page > 1,
   };
 }
+
+// ─── Saved suppliers ───────────────────────────────────────────────────────────
+
+export interface MockSupplierList {
+  uid: string;
+  name: string;
+  description: string;
+  supplierCount: number;
+  color: string;
+  createdAt: string;
+  supplierUids: string[];
+}
+
+export const mockSupplierLists: MockSupplierList[] = [
+  {
+    uid: "list-1",
+    name: "CNC vendors — shortlisted",
+    description: "Pre-vetted CNC machining suppliers for annual contract renewal",
+    supplierCount: 4,
+    color: "#6366f1",
+    createdAt: "2026-02-10T10:00:00Z",
+    supplierUids: ["biz-acme-metals", "biz-steelworks", "biz-precisioncast", "biz-robotica"],
+  },
+  {
+    uid: "list-2",
+    name: "Backup packaging suppliers",
+    description: "Secondary options for packaging continuity planning",
+    supplierCount: 2,
+    color: "#10b981",
+    createdAt: "2026-02-22T10:00:00Z",
+    supplierUids: ["biz-fastpack", "biz-greenchem"],
+  },
+  {
+    uid: "list-3",
+    name: "Electronics & PCB",
+    description: "All PCB assembly and component sourcing partners",
+    supplierCount: 3,
+    color: "#f59e0b",
+    createdAt: "2026-03-05T10:00:00Z",
+    supplierUids: ["biz-electrocore", "biz-robotica", "biz-cloudforge"],
+  },
+  {
+    uid: "list-4",
+    name: "Logistics partners",
+    description: "Freight and warehousing vendors",
+    supplierCount: 1,
+    color: "#ec4899",
+    createdAt: "2026-01-18T10:00:00Z",
+    supplierUids: ["biz-logistix"],
+  },
+];
+
+export interface MockSavedSupplier {
+  uid: string;
+  businessUid: string;
+  savedAt: string;
+  listUids: string[];
+  note: string | null;
+  lastActivity: string;
+}
+
+export const mockSavedSuppliers: MockSavedSupplier[] = [
+  { uid: "s1", businessUid: "biz-acme-metals", savedAt: "2026-02-14T10:00:00Z", listUids: ["list-1"], note: "Primary CNC vendor. Annual review in Q3.", lastActivity: "2026-04-13T09:42:00Z" },
+  { uid: "s2", businessUid: "biz-fastpack", savedAt: "2026-03-01T10:00:00Z", listUids: ["list-2"], note: "Good for small runs, slower on large orders.", lastActivity: "2026-04-13T08:15:00Z" },
+  { uid: "s3", businessUid: "biz-steelworks", savedAt: "2026-02-18T10:00:00Z", listUids: ["list-1"], note: null, lastActivity: "2026-04-10T14:20:00Z" },
+  { uid: "s4", businessUid: "biz-electrocore", savedAt: "2026-03-22T10:00:00Z", listUids: ["list-3"], note: "Authorized distributor — lead times reliable.", lastActivity: "2026-04-09T17:20:00Z" },
+  { uid: "s5", businessUid: "biz-robotica", savedAt: "2026-02-28T10:00:00Z", listUids: ["list-1", "list-3"], note: "Premium pricing but excellent quality.", lastActivity: "2026-04-11T14:00:00Z" },
+  { uid: "s6", businessUid: "biz-logistix", savedAt: "2026-01-20T10:00:00Z", listUids: ["list-4"], note: null, lastActivity: "2026-04-12T16:30:00Z" },
+  { uid: "s7", businessUid: "biz-precisioncast", savedAt: "2026-03-15T10:00:00Z", listUids: ["list-1"], note: "Foundry backup for complex geometries.", lastActivity: "2026-04-05T10:00:00Z" },
+  { uid: "s8", businessUid: "biz-cloudforge", savedAt: "2026-04-01T10:00:00Z", listUids: ["list-3"], note: null, lastActivity: "2026-04-08T11:30:00Z" },
+  { uid: "s9", businessUid: "biz-greenchem", savedAt: "2026-03-28T10:00:00Z", listUids: ["list-2"], note: "Waiting on verification docs.", lastActivity: "2026-04-03T09:00:00Z" },
+];
+
+// ─── Compliance vault ──────────────────────────────────────────────────────────
+
+export interface MockComplianceDoc {
+  uid: string;
+  name: string;
+  type: "ISO Cert" | "License" | "Insurance" | "Audit Report" | "Tax Registration";
+  issuingBody: string;
+  issuedAt: string;
+  expiresAt: string | null;
+  status: "Active" | "Expiring Soon" | "Expired" | "Pending Review";
+  fileName: string;
+  fileSize: string;
+  sharedWith: string[];
+  uploadedAt: string;
+  parsedByAi: boolean;
+}
+
+export const mockComplianceDocs: MockComplianceDoc[] = [
+  {
+    uid: "doc-1",
+    name: "ISO 9001:2015 Quality Management",
+    type: "ISO Cert",
+    issuingBody: "TÜV SÜD",
+    issuedAt: "2023-05-10T00:00:00Z",
+    expiresAt: "2026-05-10T00:00:00Z",
+    status: "Expiring Soon",
+    fileName: "iso9001-2023.pdf",
+    fileSize: "2.4 MB",
+    sharedWith: ["biz-fastpack", "biz-logistix"],
+    uploadedAt: "2023-05-15T10:00:00Z",
+    parsedByAi: true,
+  },
+  {
+    uid: "doc-2",
+    name: "ISO 14001 Environmental Management",
+    type: "ISO Cert",
+    issuingBody: "Bureau Veritas",
+    issuedAt: "2024-03-20T00:00:00Z",
+    expiresAt: "2027-03-20T00:00:00Z",
+    status: "Active",
+    fileName: "iso14001-2024.pdf",
+    fileSize: "1.8 MB",
+    sharedWith: [],
+    uploadedAt: "2024-03-25T10:00:00Z",
+    parsedByAi: true,
+  },
+  {
+    uid: "doc-3",
+    name: "General Liability Insurance",
+    type: "Insurance",
+    issuingBody: "ICICI Lombard",
+    issuedAt: "2025-11-01T00:00:00Z",
+    expiresAt: "2026-11-01T00:00:00Z",
+    status: "Active",
+    fileName: "gl-insurance-2025.pdf",
+    fileSize: "512 KB",
+    sharedWith: ["biz-acme-metals"],
+    uploadedAt: "2025-11-05T10:00:00Z",
+    parsedByAi: true,
+  },
+  {
+    uid: "doc-4",
+    name: "GST Registration Certificate",
+    type: "Tax Registration",
+    issuingBody: "GSTN",
+    issuedAt: "2018-07-01T00:00:00Z",
+    expiresAt: null,
+    status: "Active",
+    fileName: "gst-cert.pdf",
+    fileSize: "180 KB",
+    sharedWith: [],
+    uploadedAt: "2023-01-10T10:00:00Z",
+    parsedByAi: false,
+  },
+  {
+    uid: "doc-5",
+    name: "AS9100 Aerospace Quality",
+    type: "ISO Cert",
+    issuingBody: "DNV",
+    issuedAt: "2024-08-12T00:00:00Z",
+    expiresAt: "2027-08-12T00:00:00Z",
+    status: "Active",
+    fileName: "as9100-2024.pdf",
+    fileSize: "3.1 MB",
+    sharedWith: ["biz-robotica"],
+    uploadedAt: "2024-08-20T10:00:00Z",
+    parsedByAi: true,
+  },
+  {
+    uid: "doc-6",
+    name: "Factory License (Maharashtra)",
+    type: "License",
+    issuingBody: "Govt of Maharashtra",
+    issuedAt: "2022-04-15T00:00:00Z",
+    expiresAt: "2026-04-28T00:00:00Z",
+    status: "Expiring Soon",
+    fileName: "factory-license.pdf",
+    fileSize: "420 KB",
+    sharedWith: [],
+    uploadedAt: "2022-04-20T10:00:00Z",
+    parsedByAi: true,
+  },
+  {
+    uid: "doc-7",
+    name: "2025 Third-Party Quality Audit",
+    type: "Audit Report",
+    issuingBody: "SGS India",
+    issuedAt: "2025-10-05T00:00:00Z",
+    expiresAt: null,
+    status: "Pending Review",
+    fileName: "audit-sgs-2025.pdf",
+    fileSize: "5.7 MB",
+    sharedWith: [],
+    uploadedAt: "2025-10-12T10:00:00Z",
+    parsedByAi: false,
+  },
+];
+
+// ─── Quotes (for RFQ detail / compare) ─────────────────────────────────────────
+
+export interface MockQuote {
+  uid: string;
+  rfqUid: string;
+  businessUid: string;
+  businessName: string;
+  isVerified: boolean;
+  trustScore: number;
+  unitPrice: number;
+  currencyCode: string;
+  totalPrice: number;
+  leadTimeDays: number;
+  paymentTerms: string;
+  incoterms: string;
+  validUntil: string;
+  submittedAt: string;
+  status: "Pending" | "Under Review" | "Shortlisted" | "Awarded" | "Rejected";
+  notes: string;
+  attachmentCount: number;
+}
+
+export const mockQuotes: MockQuote[] = [
+  { uid: "q1", rfqUid: "rfq-142", businessUid: "biz-acme-metals", businessName: "Acme Metals Pvt. Ltd.", isVerified: true, trustScore: 4.9, unitPrice: 11, currencyCode: "USD", totalPrice: 5500, leadTimeDays: 14, paymentTerms: "Net 30", incoterms: "FOB Mumbai", validUntil: "2026-05-15T00:00:00Z", submittedAt: "2026-04-12T10:00:00Z", status: "Shortlisted", notes: "Annual commit pricing. Tolerances ±0.02mm guaranteed. CoC included.", attachmentCount: 3 },
+  { uid: "q2", rfqUid: "rfq-142", businessUid: "biz-steelworks", businessName: "SteelWorks Global", isVerified: true, trustScore: 4.6, unitPrice: 13.5, currencyCode: "USD", totalPrice: 6750, leadTimeDays: 10, paymentTerms: "50% advance", incoterms: "EXW Pune", validUntil: "2026-05-10T00:00:00Z", submittedAt: "2026-04-11T14:00:00Z", status: "Under Review", notes: "Faster lead time but higher unit cost. Can scale to 2000 units.", attachmentCount: 2 },
+  { uid: "q3", rfqUid: "rfq-142", businessUid: "biz-precisioncast", businessName: "PrecisionCast Foundry", isVerified: false, trustScore: 4.1, unitPrice: 9.5, currencyCode: "USD", totalPrice: 4750, leadTimeDays: 21, paymentTerms: "Net 45", incoterms: "FOB Rajkot", validUntil: "2026-05-01T00:00:00Z", submittedAt: "2026-04-10T09:30:00Z", status: "Pending", notes: "Best price but longer lead time. Not yet verified on platform.", attachmentCount: 1 },
+  { uid: "q4", rfqUid: "rfq-142", businessUid: "biz-robotica", businessName: "Robotica Automation", isVerified: true, trustScore: 4.9, unitPrice: 14, currencyCode: "USD", totalPrice: 7000, leadTimeDays: 12, paymentTerms: "Net 30", incoterms: "FOB Coimbatore", validUntil: "2026-05-20T00:00:00Z", submittedAt: "2026-04-12T16:00:00Z", status: "Pending", notes: "Premium pricing. Full automation and inspection report included.", attachmentCount: 4 },
+];
+
+// ─── Analytics / intelligence ──────────────────────────────────────────────────
+
+export const mockAnalytics = {
+  profileViewsByWeek: [
+    { week: "W10", views: 82 },
+    { week: "W11", views: 96 },
+    { week: "W12", views: 124 },
+    { week: "W13", views: 112 },
+    { week: "W14", views: 138 },
+    { week: "W15", views: 142 },
+  ],
+  viewerBreakdown: [
+    { industry: "Automotive", percent: 32 },
+    { industry: "Aerospace", percent: 24 },
+    { industry: "Industrial", percent: 18 },
+    { industry: "Construction", percent: 14 },
+    { industry: "Electronics", percent: 12 },
+  ],
+  topProducts: [
+    { title: "Precision CNC Machined Aluminum Bracket", views: 342, inquiries: 12 },
+    { title: "Laser-Cut Steel Gusset Plates", views: 267, inquiries: 9 },
+    { title: "ISO 9001 Certified Contract Machining", views: 218, inquiries: 8 },
+    { title: "Stainless Steel Sheet Metal Enclosure", views: 189, inquiries: 6 },
+    { title: "Welded Steel Subassembly", views: 154, inquiries: 5 },
+  ],
+  rfqPerformance: {
+    winRate: 34,
+    avgResponseTimeHours: 3.2,
+    networkAvgHours: 5.8,
+    responded: 18,
+    total: 26,
+  },
+  benchmarks: [
+    { label: "Profile completeness", you: 85, network: 62 },
+    { label: "Response rate", you: 92, network: 74 },
+    { label: "Verified docs", you: 6, network: 3 },
+    { label: "Catalog items", you: 9, network: 12 },
+  ],
+  suggestions: [
+    { title: "Add ISO 14001 certification", impact: "+18% visibility", body: "7 of 10 top competitors in your category are ISO 14001 certified." },
+    { title: "Expand to Southeast Asia delivery regions", impact: "+24% reach", body: "Network RFQ volume for SE Asia delivery is up 40% this quarter." },
+    { title: "Add 3 more catalog items", impact: "+12% profile views", body: "Businesses with 12+ items get 35% more inquiries on average." },
+  ],
+  risks: [
+    { supplier: "Acme Metals Pvt. Ltd.", issue: "ISO 9001 cert expires in 14 days", severity: "high" as const },
+    { supplier: "GreenChem Solutions", issue: "Review score declined from 4.5 to 4.2", severity: "medium" as const },
+    { supplier: "PrecisionCast Foundry", issue: "No activity on profile for 42 days", severity: "low" as const },
+  ],
+  demandSignals: [
+    { category: "EV battery components", change: "+212%", region: "India" },
+    { category: "Aerospace fasteners", change: "+48%", region: "SE Asia" },
+    { category: "Industrial automation", change: "+34%", region: "Middle East" },
+  ],
+};
+
+// ─── Due diligence ────────────────────────────────────────────────────────────
+
+export interface MockDueDiligence {
+  companyName: string;
+  gstNumber: string;
+  cinNumber: string;
+  incorporationDate: string;
+  status: "Active" | "Struck Off" | "Dormant";
+  registeredAddress: string;
+  directors: string[];
+  paidUpCapital: string;
+  authorisedCapital: string;
+  lastFilingDate: string;
+  gstCompliance: "Compliant" | "Non-Compliant" | "Unknown";
+  importExportCode: string | null;
+  msmeCategory: string | null;
+  onNextrade: boolean;
+  nextradeUid: string | null;
+  trustScore: number | null;
+  verifiedCerts: string[];
+  riskFlags: string[];
+}
+
+export const mockDueDiligence: MockDueDiligence = {
+  companyName: "Acme Metals Pvt. Ltd.",
+  gstNumber: "27AAFCA1234B1Z5",
+  cinNumber: "U27100MH2008PTC181234",
+  incorporationDate: "2008-06-12",
+  status: "Active",
+  registeredAddress: "Plot 14, MIDC Industrial Area, Andheri East, Mumbai 400093",
+  directors: ["Rajiv Mehta", "Sunita Mehta", "Arun Kumar"],
+  paidUpCapital: "₹50,00,000",
+  authorisedCapital: "₹1,00,00,000",
+  lastFilingDate: "2025-09-30",
+  gstCompliance: "Compliant",
+  importExportCode: "0308012345",
+  msmeCategory: "Medium Enterprise",
+  onNextrade: true,
+  nextradeUid: "biz-acme-metals",
+  trustScore: 4.9,
+  verifiedCerts: ["ISO 9001:2015", "AS9100D", "ISO 14001"],
+  riskFlags: [],
+};
+
+// ─── Profile completeness ─────────────────────────────────────────────────────
+
+export const mockProfileCompleteness = {
+  score: 72,
+  sections: [
+    { label: "Basic information", completed: true, weight: 10 },
+    { label: "About & description", completed: true, weight: 10 },
+    { label: "Logo & banner", completed: true, weight: 8 },
+    { label: "Capabilities", completed: true, weight: 10 },
+    { label: "Certifications", completed: true, weight: 12 },
+    { label: "Delivery regions", completed: true, weight: 8 },
+    { label: "Catalog items (5+)", completed: true, weight: 14 },
+    { label: "Business verification", completed: false, weight: 15 },
+    { label: "Team members", completed: false, weight: 5 },
+    { label: "Compliance documents", completed: false, weight: 8 },
+  ],
+};
+
+// ─── Team members ─────────────────────────────────────────────────────────────
+
+export interface MockTeamMember {
+  uid: string;
+  name: string;
+  email: string;
+  role: "Admin" | "Catalog Manager" | "Sales" | "Procurement";
+  status: "Active" | "Invited";
+  lastActive: string;
+}
+
+export const mockTeamMembers: MockTeamMember[] = [
+  { uid: "tm1", name: "Rajiv Mehta", email: "rajiv@acmemetals.com", role: "Admin", status: "Active", lastActive: "2026-04-13T09:30:00Z" },
+  { uid: "tm2", name: "Priya Desai", email: "priya@acmemetals.com", role: "Catalog Manager", status: "Active", lastActive: "2026-04-13T08:15:00Z" },
+  { uid: "tm3", name: "Vikram Singh", email: "vikram@acmemetals.com", role: "Sales", status: "Active", lastActive: "2026-04-12T17:40:00Z" },
+  { uid: "tm4", name: "Anjali Rao", email: "anjali@acmemetals.com", role: "Procurement", status: "Invited", lastActive: "2026-04-11T11:00:00Z" },
+];
 
 export function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();

@@ -85,15 +85,10 @@ export default function LandingPage() {
             NexTrade
           </Link>
           <nav className="hidden md:flex items-center gap-1 ml-4">
-            {["Features", "Discover", "Pricing", "Docs"].map((item) => (
-              <a
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                className="px-3 py-1.5 text-sm text-foreground-secondary hover:text-foreground transition-colors"
-              >
-                {item}
-              </a>
-            ))}
+            <Link href="#features" className="px-3 py-1.5 text-sm text-foreground-secondary hover:text-foreground transition-colors">Features</Link>
+            <Link href="/search" className="px-3 py-1.5 text-sm text-foreground-secondary hover:text-foreground transition-colors">Discover</Link>
+            <Link href="/due-diligence" className="px-3 py-1.5 text-sm text-foreground-secondary hover:text-foreground transition-colors">Due Diligence</Link>
+            <a href="#features" className="px-3 py-1.5 text-sm text-foreground-secondary hover:text-foreground transition-colors">Pricing</a>
           </nav>
           <div className="flex-1" />
           <div className="flex items-center gap-2">
@@ -125,13 +120,18 @@ export default function LandingPage() {
             <Button size="lg" render={<Link href="/register" />}>
               Create a free profile <ArrowRight className="size-4" />
             </Button>
-            <Button size="lg" variant="outline" render={<Link href="/discover" />}>
+            <Button size="lg" variant="outline" render={<Link href="/search" />}>
               Explore businesses
             </Button>
           </div>
           <p className="mt-4 text-xs text-foreground-tertiary">
-            No credit card required · 14-day Pro trial
+            No credit card required · Free due diligence tool · 14-day Pro trial
           </p>
+          <div className="mt-4">
+            <Link href="/due-diligence" className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
+              <ShieldCheck className="size-3" /> Run a free vendor due-diligence check — no login
+            </Link>
+          </div>
 
           {/* Search preview */}
           <div className="mt-14 max-w-3xl mx-auto">
