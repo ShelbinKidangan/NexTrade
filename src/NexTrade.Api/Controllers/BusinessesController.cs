@@ -22,6 +22,20 @@ public class BusinessesController(BusinessService service) : ControllerBase
         return result.Succeeded ? Ok(result.Data) : StatusCode(result.StatusCode, new { message = result.Error });
     }
 
+    [HttpGet("me")]
+    public async Task<ActionResult> GetMine(CancellationToken ct)
+    {
+        var result = await service.GetMineAsync(ct);
+        return result.Succeeded ? Ok(result.Data) : StatusCode(result.StatusCode, new { message = result.Error });
+    }
+
+    [HttpPatch("me")]
+    public async Task<ActionResult> UpdateMine([FromBody] BusinessService.UpdateProfileRequest req, CancellationToken ct)
+    {
+        var result = await service.UpdateMineAsync(req, ct);
+        return result.Succeeded ? NoContent() : StatusCode(result.StatusCode, new { message = result.Error });
+    }
+
     [HttpPut("{uid:guid}/profile")]
     public async Task<ActionResult> UpdateProfile(Guid uid, [FromBody] BusinessService.UpdateProfileRequest req, CancellationToken ct)
     {

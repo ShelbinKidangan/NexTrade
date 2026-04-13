@@ -6,4 +6,5 @@ public class TenantContext : ITenantContext
 {
     public Guid TenantId { get; set; }
     public long? UserId { get; set; }
+    public bool IsPlatformAdmin { get; set; }
 }

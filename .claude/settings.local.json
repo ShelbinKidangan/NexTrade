@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -i \"\\\\.cs$\")"
+      "Bash(grep -i \"\\\\.cs$\")",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit -m ':*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Razor\\source\\repos\\EntityNext\\NexTrade\\src\\NexTrade.Core\\Entities"
     ]
   }
 }

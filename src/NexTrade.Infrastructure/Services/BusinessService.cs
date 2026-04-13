@@ -6,7 +6,7 @@ using NexTrade.Shared;
 
 namespace NexTrade.Infrastructure.Services;
 
-public class BusinessService(AppDbContext db, IUnitOfWork uow)
+public class BusinessService(AppDbContext db, IUnitOfWork uow, ITenantContext tenant)
 {
     // --- DTOs ---
     public record BusinessDto(
@@ -100,6 +100,13 @@ public class BusinessService(AppDbContext db, IUnitOfWork uow)
             business.YearEstablished, business.Website, business.LinkedInUrl,
             business.ProfileSource.ToString(), profile, business.CreatedAt));
     }
+
+    // --- Current tenant's own profile ---
+    public Task<ServiceResult<BusinessDetailDto>> GetMineAsync(CancellationToken ct)
+        => GetByUidAsync(tenant.TenantId, ct);
+
+    public Task<ServiceResult> UpdateMineAsync(UpdateProfileRequest req, CancellationToken ct)
+        => UpdateProfileAsync(tenant.TenantId, req, ct);
 
     // --- Update own profile (tenant-scoped) ---
     public async Task<ServiceResult> UpdateProfileAsync(Guid businessUid, UpdateProfileRequest req, CancellationToken ct)

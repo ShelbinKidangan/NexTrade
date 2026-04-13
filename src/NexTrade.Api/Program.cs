@@ -65,7 +65,11 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("PlatformAdmin", policy =>
+        policy.RequireClaim("platform_admin", "true"));
+});
 
 // MassTransit + RabbitMQ
 builder.Services.AddMassTransit(x =>
@@ -106,6 +110,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Auto-migrate + seed on startup in Development. Aspire spins up dynamic Postgres
+// ports per-run, so running `dotnet ef database update` manually is impractical.
+if (app.Environment.IsDevelopment())
+{
+    await DbInitializer.InitializeAsync(app.Services);
+}
 
 // Middleware pipeline
 app.UseMiddleware<ExceptionMiddleware>();

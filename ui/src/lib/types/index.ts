@@ -29,6 +29,12 @@ export interface BusinessDetailDto {
   isVerified: boolean;
   trustScore: number;
   verifiedAt: string | null;
+  industry: string | null;
+  companySize: string | null;
+  yearEstablished: number | null;
+  website: string | null;
+  linkedInUrl: string | null;
+  profileSource: string;
   profile: ProfileDto | null;
   createdAt: string;
 }
@@ -37,19 +43,17 @@ export interface ProfileDto {
   logo: string | null;
   bannerImage: string | null;
   about: string | null;
-  website: string | null;
-  linkedInUrl: string | null;
-  yearEstablished: number | null;
-  companySize: string | null;
   city: string | null;
   state: string | null;
   countryCode: string | null;
   capabilities: string[];
   certifications: string[];
   deliveryRegions: string[];
+  additionalLocations: string[];
+  socialLinks: Record<string, string>;
   responseRate: number;
   avgResponseTimeHours: number;
-  industry: string | null;
+  profileCompleteness: number;
 }
 
 export interface UpdateProfileRequest {

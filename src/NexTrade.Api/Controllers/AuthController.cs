@@ -27,4 +27,13 @@ public class AuthController(AuthService authService) : ControllerBase
             ? Ok(result.Data)
             : StatusCode(result.StatusCode, new { message = result.Error });
     }
+
+    [HttpPost("admin-login")]
+    public async Task<ActionResult> AdminLogin([FromBody] LoginRequest req)
+    {
+        var result = await authService.AdminLoginAsync(req.Email, req.Password);
+        return result.Succeeded
+            ? Ok(result.Data)
+            : StatusCode(result.StatusCode, new { message = result.Error });
+    }
 }

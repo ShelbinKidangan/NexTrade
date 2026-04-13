@@ -22,6 +22,7 @@ public static class DependencyInjection
             options.UseNpgsql(dataSource, npgsql =>
             {
                 npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
+                npgsql.UseVector();
             })
             .UseSnakeCaseNamingConvention());
 
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<AuthService>();
         services.AddScoped<BusinessService>();
         services.AddScoped<CatalogService>();
+        services.AddScoped<ReferenceService>();
 
         return services;
     }

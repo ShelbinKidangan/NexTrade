@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, Eye, EyeOff, Sparkles, Check, BadgeCheck, ShieldCheck,
   Zap, MessageSquare,
@@ -10,6 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { authApi, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 const industries = [
   "Industrial Metals", "Packaging & Materials", "Electronics", "Chemicals",
@@ -39,7 +40,7 @@ function passwordScore(pw: string): { score: number; label: string } {
 }
 
 export default function RegisterPage() {
-  const router = useRouter();
+  const { login } = useAuth();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     businessName: "",
@@ -54,6 +55,7 @@ export default function RegisterPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const pwScore = passwordScore(form.password);
 
@@ -76,8 +78,20 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    setTimeout(() => router.push("/dashboard"), 500);
+    try {
+      const res = await authApi.register({
+        businessName: form.businessName,
+        fullName: form.fullName,
+        email: form.email,
+        password: form.password,
+      });
+      login(res.token, res.user, res.business);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Registration failed. Please try again.");
+      setLoading(false);
+    }
   }
 
   return (
@@ -333,6 +347,12 @@ export default function RegisterPage() {
                     You can update everything after signup. We&apos;ll send a verification link to
                     your email.
                   </p>
+                </div>
+              )}
+
+              {error && (
+                <div className="rounded-md border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
+                  {error}
                 </div>
               )}
 

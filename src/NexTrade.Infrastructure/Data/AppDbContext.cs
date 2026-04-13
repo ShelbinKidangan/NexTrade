@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexTrade.Core.Entities;
 using NexTrade.Core.Interfaces;
 using NexTrade.Infrastructure.Identity;
+using NpgsqlTypes;
 
 namespace NexTrade.Infrastructure.Data;
 
@@ -57,6 +58,9 @@ public class AppDbContext(
     {
         base.OnModelCreating(builder);
 
+        // pgvector extension (our CatalogItem / BusinessProfile embeddings depend on it).
+        builder.HasPostgresExtension("vector");
+
         // Rename Identity tables to snake_case
         builder.Entity<User>().ToTable("users");
         builder.Entity<Role>().ToTable("roles");
@@ -76,6 +80,10 @@ public class AppDbContext(
             e.HasOne(b => b.Profile).WithOne(p => p.Business).HasForeignKey<BusinessProfile>(p => p.BusinessId);
             e.HasOne(b => b.Industry).WithMany().HasForeignKey(b => b.IndustryId);
             e.HasOne(b => b.SubIndustry).WithMany().HasForeignKey(b => b.SubIndustryId);
+
+            // Sprint 2 populates via trigger; column + GIN index shipped now to avoid re-migration.
+            e.Property<NpgsqlTsVector?>("SearchVector").HasColumnType("tsvector");
+            e.HasIndex("SearchVector").HasMethod("GIN");
         });
 
         // BusinessProfile JSONB + pgvector
@@ -104,6 +112,9 @@ public class AppDbContext(
             e.Property(c => c.DeliveryRegions).HasColumnType("jsonb");
             e.Property(c => c.Embedding).HasColumnType("vector(1536)");
             e.HasOne(c => c.Category).WithMany().HasForeignKey(c => c.CategoryId);
+
+            e.Property<NpgsqlTsVector?>("SearchVector").HasColumnType("tsvector");
+            e.HasIndex("SearchVector").HasMethod("GIN");
         });
 
         builder.Entity<CatalogCategory>(e =>

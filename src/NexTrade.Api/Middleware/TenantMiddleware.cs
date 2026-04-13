@@ -9,14 +9,24 @@ public class TenantMiddleware(RequestDelegate next)
     {
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            var tenantClaim = context.User.FindFirst("tenant_id")?.Value;
-            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var tenantContext = context.RequestServices.GetRequiredService<TenantContext>();
 
-            if (Guid.TryParse(tenantClaim, out var tenantId))
+            var isPlatformAdmin = context.User.FindFirst("platform_admin")?.Value == "true";
+            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            tenantContext.UserId = long.TryParse(userIdClaim, out var userId) ? userId : null;
+
+            if (isPlatformAdmin)
             {
-                var tenantContext = context.RequestServices.GetRequiredService<TenantContext>();
-                tenantContext.TenantId = tenantId;
-                tenantContext.UserId = long.TryParse(userIdClaim, out var userId) ? userId : null;
+                // Platform admins get no tenant binding; admin endpoints must use
+                // .IgnoreQueryFilters() explicitly — TenantId stays Guid.Empty so
+                // no tenant-scoped row is accidentally visible.
+                tenantContext.IsPlatformAdmin = true;
+            }
+            else
+            {
+                var tenantClaim = context.User.FindFirst("tenant_id")?.Value;
+                if (Guid.TryParse(tenantClaim, out var tenantId))
+                    tenantContext.TenantId = tenantId;
             }
         }
 

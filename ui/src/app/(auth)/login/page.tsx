@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff, Search, Sparkles, BadgeCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { authApi, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 const DEMO_EMAIL = "demo@nextrade.app";
 const DEMO_PASSWORD = "demo1234";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,7 +25,13 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    setTimeout(() => router.push("/dashboard"), 400);
+    try {
+      const res = await authApi.login({ email, password });
+      login(res.token, res.user, res.business);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Sign-in failed. Please try again.");
+      setLoading(false);
+    }
   }
 
   function fillDemo() {

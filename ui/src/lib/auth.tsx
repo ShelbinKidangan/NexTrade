@@ -7,6 +7,7 @@ interface User {
   uid: string;
   fullName: string;
   email: string;
+  isPlatformAdmin: boolean;
 }
 
 interface Business {

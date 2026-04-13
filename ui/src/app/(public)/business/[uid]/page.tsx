@@ -86,8 +86,8 @@ export default function BusinessProfilePage({ params }: { params: Promise<{ uid:
             <h1 className="text-2xl font-semibold">{business.name}</h1>
             {business.isVerified && <BadgeCheck className="size-5 text-accent" />}
           </div>
-          {p?.industry && (
-            <p className="text-sm text-foreground-secondary mt-0.5">{p.industry}</p>
+          {business.industry && (
+            <p className="text-sm text-foreground-secondary mt-0.5">{business.industry}</p>
           )}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-foreground-secondary">
             {p?.city && (
@@ -96,23 +96,23 @@ export default function BusinessProfilePage({ params }: { params: Promise<{ uid:
                 {p.city}{p.countryCode ? `, ${p.countryCode}` : ""}
               </span>
             )}
-            {p?.yearEstablished && (
+            {business.yearEstablished && (
               <span className="flex items-center gap-1">
-                <Calendar className="size-3" /> Est. {p.yearEstablished}
+                <Calendar className="size-3" /> Est. {business.yearEstablished}
               </span>
             )}
-            {p?.companySize && (
+            {business.companySize && (
               <span className="flex items-center gap-1">
-                <Users className="size-3" /> {p.companySize}
+                <Users className="size-3" /> {business.companySize}
               </span>
             )}
-            {p?.website && (
-              <a href={p.website} target="_blank" rel="noopener" className="flex items-center gap-1 text-accent hover:underline">
+            {business.website && (
+              <a href={business.website} target="_blank" rel="noopener" className="flex items-center gap-1 text-accent hover:underline">
                 <Globe className="size-3" /> Website
               </a>
             )}
-            {p?.linkedInUrl && (
-              <a href={p.linkedInUrl} target="_blank" rel="noopener" className="flex items-center gap-1 text-accent hover:underline">
+            {business.linkedInUrl && (
+              <a href={business.linkedInUrl} target="_blank" rel="noopener" className="flex items-center gap-1 text-accent hover:underline">
                 <Link2 className="size-3" /> LinkedIn
               </a>
             )}
@@ -208,22 +208,22 @@ export default function BusinessProfilePage({ params }: { params: Promise<{ uid:
             <Card>
               <CardContent className="pt-4 space-y-2">
                 <h3 className="text-sm font-medium mb-1">Key Facts</h3>
-                {p?.industry && (
+                {business.industry && (
                   <div className="flex justify-between text-xs">
                     <span className="text-foreground-secondary">Industry</span>
-                    <span>{p.industry}</span>
+                    <span>{business.industry}</span>
                   </div>
                 )}
-                {p?.companySize && (
+                {business.companySize && (
                   <div className="flex justify-between text-xs">
                     <span className="text-foreground-secondary">Size</span>
-                    <span>{p.companySize}</span>
+                    <span>{business.companySize}</span>
                   </div>
                 )}
-                {p?.yearEstablished && (
+                {business.yearEstablished && (
                   <div className="flex justify-between text-xs">
                     <span className="text-foreground-secondary">Founded</span>
-                    <span>{p.yearEstablished}</span>
+                    <span>{business.yearEstablished}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-xs">
