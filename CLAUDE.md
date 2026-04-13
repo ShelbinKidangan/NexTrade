@@ -4,9 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What Is This
 
-NexTrade is an AI-native B2B platform — "LinkedIn for businesses." Companies register, build verified profiles, list products/services, discover partners, request quotes, and transact. Every business is a peer — no buyer/supplier distinction.
+NexTrade is an AI-native **supplier intelligence platform** — the discovery and trust layer for B2B. Businesses register, build verified profiles, list products/services, get discovered by buyers, request and compare quotes. The platform is seeded from vendor lists of enterprise customers using our S2P system (~5,000 suppliers).
 
-Standalone app. Separate repo, separate DB, separate deployment.
+NexTrade is the **top-of-funnel network**; the S2P system is the **back-office procurement engine**. No transactions (orders/invoicing) happen on NexTrade — the platform's job ends at "Quote Awarded." Execution happens in the buyer's own systems.
+
+Standalone app. Separate repo, separate DB, separate deployment. Integrates with S2P via API.
 
 ## Architecture
 
@@ -25,8 +27,8 @@ Solution file is [src/NexTrade.slnx](src/NexTrade.slnx) — the new XML solution
 
 In NexTrade, **tenant = business**, and **cross-tenant visibility is the core feature**. This means:
 
-- **Tenant-scoped queries**: my catalog, my orders, my team, my settings (use normal EF query filters)
-- **Platform-scoped queries**: discovery, public profiles, public RFQs, reviews (use `.IgnoreQueryFilters()`)
+- **Tenant-scoped queries**: my catalog, my RFQs, my team, my settings, my compliance vault (use normal EF query filters)
+- **Platform-scoped queries**: discovery, public profiles, public RFQs, reviews, deal confirmations (use `.IgnoreQueryFilters()`)
 
 ### Tenant Resolution Flow
 
@@ -92,7 +94,7 @@ Frontend auth: the UI stores the JWT and attaches it via [ui/src/lib/api.ts](ui/
 - `TenantEntity` — tenant-scoped, has `Uid`, `TenantId`, audit fields
 - `ChildEntity` — no Uid/TenantId, isolated via parent FK
 - `PlatformEntity` — shared across tenants (Industry, Country, Currency)
-- `BaseEntity` — cross-tenant entities (Connection, Review, Conversation)
+- `BaseEntity` — cross-tenant entities (DealConfirmation, Review, Conversation)
 
 ### Service Pattern
 - Thin controllers → scoped services → [ServiceResult / ServiceResult&lt;T&gt;](src/NexTrade.Infrastructure/Services/ServiceResult.cs) (`Ok` / `Created` / `Fail` with status code and field-level errors)
