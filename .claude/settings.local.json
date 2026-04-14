@@ -9,7 +9,9 @@
       "Bash(mv 20260413174230_AddCatalogItemSlug.Designer.cs 20260413190000_AddCatalogItemSlug.Designer.cs)",
       "Bash(grep -n \"ASPNETCORE_ENVIRONMENT\\\\|IsDevelopment\\\\|InitializeAsync\\\\|DemoData\" src/NexTrade.Api/Program.cs infra/docker/docker-compose*.yml)",
       "Bash(git push:*)",
-      "Bash(grep -l \"rfqs\\\\|rfq_items\\\\|rfq_targets\\\\|quotes\\\\|quote_items\\\\|deal_confirmations\" c:/Users/Razor/source/repos/EntityNext/NexTrade/src/NexTrade.Infrastructure/Migrations/*.cs)"
+      "Bash(grep -l \"rfqs\\\\|rfq_items\\\\|rfq_targets\\\\|quotes\\\\|quote_items\\\\|deal_confirmations\" c:/Users/Razor/source/repos/EntityNext/NexTrade/src/NexTrade.Infrastructure/Migrations/*.cs)",
+      "Bash(grep -E \"^\\(C:|\\\\\\\\d+:\\)\")",
+      "Bash(grep -A1 \"admin\\\\\\\\\\\\\\\\admin\\\\\\\\\\\\\\\\audit-log\\\\\\\\\\\\\\\\page.tsx:20:21\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\Razor\\source\\repos\\EntityNext\\NexTrade\\src\\NexTrade.Core\\Entities",
