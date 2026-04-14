@@ -11,7 +11,8 @@
       "Bash(git push:*)",
       "Bash(grep -l \"rfqs\\\\|rfq_items\\\\|rfq_targets\\\\|quotes\\\\|quote_items\\\\|deal_confirmations\" c:/Users/Razor/source/repos/EntityNext/NexTrade/src/NexTrade.Infrastructure/Migrations/*.cs)",
       "Bash(grep -E \"^\\(C:|\\\\\\\\d+:\\)\")",
-      "Bash(grep -A1 \"admin\\\\\\\\\\\\\\\\admin\\\\\\\\\\\\\\\\audit-log\\\\\\\\\\\\\\\\page.tsx:20:21\")"
+      "Bash(grep -A1 \"admin\\\\\\\\\\\\\\\\admin\\\\\\\\\\\\\\\\audit-log\\\\\\\\\\\\\\\\page.tsx:20:21\")",
+      "Bash(grep -l \"QuoteItemMoq\\\\|QuoteItem.*Incoterms\" /c/Users/Razor/source/repos/EntityNext/NexTrade/src/NexTrade.Core/Entities/*.cs)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Razor\\source\\repos\\EntityNext\\NexTrade\\src\\NexTrade.Core\\Entities",
