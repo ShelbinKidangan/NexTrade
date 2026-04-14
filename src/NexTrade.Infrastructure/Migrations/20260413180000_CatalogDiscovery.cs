@@ -11,13 +11,18 @@ namespace NexTrade.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             // --- catalog_items.search_vector trigger ---
+            // delivery_regions is jsonb (JSON string array), so we flatten it
+            // via jsonb_array_elements_text + string_agg rather than array_to_string.
             migrationBuilder.Sql(@"
 CREATE OR REPLACE FUNCTION catalog_items_search_vector_update() RETURNS trigger AS $$
 BEGIN
     NEW.search_vector :=
         setweight(to_tsvector('english', coalesce(NEW.title, '')), 'A') ||
         setweight(to_tsvector('english', coalesce(NEW.description, '')), 'B') ||
-        setweight(to_tsvector('english', coalesce(array_to_string(NEW.delivery_regions, ' '), '')), 'C');
+        setweight(to_tsvector('english', coalesce(
+            (SELECT string_agg(value, ' ') FROM jsonb_array_elements_text(NEW.delivery_regions)),
+            ''
+        )), 'C');
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -38,18 +43,25 @@ UPDATE catalog_items
 SET search_vector =
     setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
     setweight(to_tsvector('english', coalesce(description, '')), 'B') ||
-    setweight(to_tsvector('english', coalesce(array_to_string(delivery_regions, ' '), '')), 'C');
+    setweight(to_tsvector('english', coalesce(
+        (SELECT string_agg(value, ' ') FROM jsonb_array_elements_text(delivery_regions)),
+        ''
+    )), 'C');
 ");
 
             // --- businesses.search_vector trigger ---
             // Includes capabilities from the child business_profiles row.
+            // capabilities is jsonb (JSON string array) — flatten via
+            // jsonb_array_elements_text rather than array_to_string.
             migrationBuilder.Sql(@"
 CREATE OR REPLACE FUNCTION businesses_search_vector_update() RETURNS trigger AS $$
 DECLARE
     profile_about text;
     profile_caps text;
 BEGIN
-    SELECT about, array_to_string(capabilities, ' ')
+    SELECT
+        about,
+        (SELECT string_agg(value, ' ') FROM jsonb_array_elements_text(capabilities))
         INTO profile_about, profile_caps
         FROM business_profiles
         WHERE business_id = NEW.id;
@@ -98,7 +110,10 @@ EXECUTE FUNCTION business_profiles_touch_business();
 UPDATE businesses b
 SET search_vector =
     setweight(to_tsvector('english', coalesce(b.name, '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(array_to_string(bp.capabilities, ' '), '')), 'B') ||
+    setweight(to_tsvector('english', coalesce(
+        (SELECT string_agg(value, ' ') FROM jsonb_array_elements_text(bp.capabilities)),
+        ''
+    )), 'B') ||
     setweight(to_tsvector('english', coalesce(bp.about, '')), 'C')
 FROM business_profiles bp
 WHERE bp.business_id = b.id;

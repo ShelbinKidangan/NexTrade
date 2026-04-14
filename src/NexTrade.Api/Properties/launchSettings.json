@@ -3,10 +3,11 @@
     "NexTrade.Api": {
       "commandName": "Project",
       "launchBrowser": true,
+      "launchUrl": "scalar/v1",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:57603;http://localhost:57604"
+      "applicationUrl": "http://localhost:5000"
     }
   }
 }
