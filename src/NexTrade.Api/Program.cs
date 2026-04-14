@@ -129,6 +129,7 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<TenantMiddleware>();
+app.UseMiddleware<AdminAuditMiddleware>();
 
 app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");

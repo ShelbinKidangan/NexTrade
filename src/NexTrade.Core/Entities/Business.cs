@@ -30,6 +30,12 @@ public class Business : BaseEntity
 
     public bool IsActive { get; set; } = true;
 
+    // Suspension (admin action). Separate from IsActive: IsActive is the tenant's
+    // own soft-delete, IsSuspended is a platform-admin enforcement action.
+    public bool IsSuspended { get; set; }
+    public DateTime? SuspendedAt { get; set; }
+    public string? SuspensionReason { get; set; }
+
     // Navigation
     public Industry? Industry { get; set; }
     public Industry? SubIndustry { get; set; }

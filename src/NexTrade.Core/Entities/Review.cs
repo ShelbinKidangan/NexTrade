@@ -1,3 +1,5 @@
+using NexTrade.Core.Enums;
+
 namespace NexTrade.Core.Entities;
 
 /// <summary>
@@ -20,6 +22,8 @@ public class Review : BaseEntity
 
     /// <summary>True when both parties confirmed the deal on DealConfirmation.</summary>
     public bool IsVerifiedDeal { get; set; }
+
+    public ModerationStatus Moderation { get; set; } = ModerationStatus.Active;
 
     // Navigation
     public DealConfirmation DealConfirmation { get; set; } = null!;

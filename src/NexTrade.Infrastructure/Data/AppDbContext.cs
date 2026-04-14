@@ -54,6 +54,9 @@ public class AppDbContext(
     public DbSet<Currency> Currencies => Set<Currency>();
     public DbSet<GovernmentRegistryRecord> GovernmentRegistryRecords => Set<GovernmentRegistryRecord>();
 
+    // Admin audit log (cross-tenant)
+    public DbSet<AdminAuditEntry> AdminAuditEntries => Set<AdminAuditEntry>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -215,6 +218,14 @@ public class AppDbContext(
             e.Property(g => g.Payload).HasColumnType("jsonb");
             e.HasIndex(g => new { g.Source, g.RegistryId }).IsUnique();
             e.HasIndex(g => g.LinkedBusinessUid);
+        });
+
+        // Admin audit
+        builder.Entity<AdminAuditEntry>(e =>
+        {
+            e.HasIndex(a => new { a.AdminUserId, a.CreatedAt });
+            e.HasIndex(a => new { a.TargetEntity, a.TargetUid });
+            e.Property(a => a.Payload).HasColumnType("jsonb");
         });
 
         // Enum string conversions

@@ -65,7 +65,7 @@ public class DiscoveryService(AppDbContext db)
         {
             var supplierQuery = db.Businesses
                 .IgnoreQueryFilters()
-                .Where(b => b.IsActive);
+                .Where(b => b.IsActive && !b.IsSuspended);
 
             if (!string.IsNullOrEmpty(filter.Industry))
                 supplierQuery = supplierQuery.Where(b => b.Industry != null && b.Industry.Slug == filter.Industry);
@@ -130,7 +130,7 @@ public class DiscoveryService(AppDbContext db)
             .IgnoreQueryFilters()
             .Include(b => b.Industry)
             .Include(b => b.Profile)
-            .Where(b => b.IsActive)
+            .Where(b => b.IsActive && !b.IsSuspended)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
@@ -184,7 +184,7 @@ public class DiscoveryService(AppDbContext db)
             .IgnoreQueryFilters()
             .Include(b => b.Industry)
             .Include(b => b.Profile)
-            .FirstOrDefaultAsync(b => b.Uid == uid && b.IsActive, ct);
+            .FirstOrDefaultAsync(b => b.Uid == uid && b.IsActive && !b.IsSuspended, ct);
 
         if (business is null)
             return ServiceResult<PublicBusinessProfileDto>.Fail("Business not found.", 404);

@@ -74,7 +74,8 @@ public class RfqService(AppDbContext db, IUnitOfWork uow, ITenantContext tenant,
             .IgnoreQueryFilters()
             .Include(r => r.Items)
             .Include(r => r.Quotes)
-            .Where(r => r.Visibility == RfqVisibility.Public && r.Status == RfqStatus.Open);
+            .Where(r => r.Visibility == RfqVisibility.Public && r.Status == RfqStatus.Open
+                && r.Moderation == ModerationStatus.Active);
 
         if (!string.IsNullOrEmpty(filter.Search))
             query = query.Where(r => r.Title.ToLower().Contains(filter.Search.ToLower()));

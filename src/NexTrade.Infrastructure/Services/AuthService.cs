@@ -77,12 +77,15 @@ public class AuthService(
         if (!result.Succeeded)
             return ServiceResult<object>.Fail("Invalid credentials.", 401);
 
-        user.LastLoginAt = DateTime.UtcNow;
-        await userManager.UpdateAsync(user);
-
         var business = await db.Businesses
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(b => b.Uid == user.TenantId);
+
+        if (business is not null && business.IsSuspended)
+            return ServiceResult<object>.Fail("This account has been suspended by platform admin.", 403);
+
+        user.LastLoginAt = DateTime.UtcNow;
+        await userManager.UpdateAsync(user);
 
         var token = GenerateToken(user);
         return ServiceResult<object>.Ok(new

@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut, ShieldCheck, LayoutDashboard } from "lucide-react";
+import {
+  LogOut, ShieldCheck, LayoutDashboard, Building2, FileCheck2,
+  Users, MessageSquareWarning, BookOpen, ScrollText,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { session } from "@/lib/api";
 
@@ -47,6 +50,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         <nav className="flex-1 p-2 space-y-1">
           <NavItem href="/admin/dashboard" icon={<LayoutDashboard className="size-4" />} label="Dashboard" />
+          <NavItem href="/admin/verifications" icon={<FileCheck2 className="size-4" />} label="Verifications" />
+          <NavItem href="/admin/businesses" icon={<Building2 className="size-4" />} label="Businesses" />
+          <NavItem href="/admin/users" icon={<Users className="size-4" />} label="Users" />
+          <NavItem href="/admin/content" icon={<MessageSquareWarning className="size-4" />} label="Content" />
+          <NavItem href="/admin/reference-data" icon={<BookOpen className="size-4" />} label="Reference data" />
+          <NavItem href="/admin/audit-log" icon={<ScrollText className="size-4" />} label="Audit log" />
         </nav>
         <div className="p-3 border-t border-border">
           <div className="text-[11px] text-foreground-tertiary truncate mb-2">{adminEmail ?? ""}</div>

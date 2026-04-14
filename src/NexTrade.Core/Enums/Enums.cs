@@ -10,7 +10,18 @@ public enum CatalogItemStatus
 {
     Draft,
     Published,
-    Archived
+    Archived,
+    // Admin moderation states. Hidden = removed from discovery but visible
+    // to its owner; Flagged = marked for review, still visible to owner.
+    Hidden,
+    Flagged
+}
+
+public enum ModerationStatus
+{
+    Active,
+    Flagged,
+    Hidden
 }
 
 public enum PricingType

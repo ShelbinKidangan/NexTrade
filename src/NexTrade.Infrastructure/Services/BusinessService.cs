@@ -48,7 +48,7 @@ public class BusinessService(AppDbContext db, IUnitOfWork uow, ITenantContext te
             .IgnoreQueryFilters()
             .Include(b => b.Industry)
             .Include(b => b.Profile)
-            .Where(b => b.IsActive)
+            .Where(b => b.IsActive && !b.IsSuspended)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(filter.Search))
@@ -81,7 +81,7 @@ public class BusinessService(AppDbContext db, IUnitOfWork uow, ITenantContext te
             .IgnoreQueryFilters()
             .Include(b => b.Industry)
             .Include(b => b.Profile)
-            .FirstOrDefaultAsync(b => b.Uid == uid && b.IsActive, ct);
+            .FirstOrDefaultAsync(b => b.Uid == uid && b.IsActive && !b.IsSuspended, ct);
 
         if (business is null)
             return ServiceResult<BusinessDetailDto>.Fail("Business not found.", 404);

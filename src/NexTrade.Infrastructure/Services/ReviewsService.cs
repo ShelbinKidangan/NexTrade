@@ -87,7 +87,7 @@ public class ReviewsService(AppDbContext db, IUnitOfWork uow, ITenantContext ten
         Guid businessUid, int page, int pageSize, CancellationToken ct)
     {
         var query = db.Reviews
-            .Where(r => r.ReviewedBusinessUid == businessUid)
+            .Where(r => r.ReviewedBusinessUid == businessUid && r.Moderation == NexTrade.Core.Enums.ModerationStatus.Active)
             .OrderByDescending(r => r.CreatedAt);
 
         var totalCount = await query.CountAsync(ct);

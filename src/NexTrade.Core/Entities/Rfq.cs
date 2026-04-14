@@ -2,12 +2,14 @@ using NexTrade.Core.Enums;
 
 namespace NexTrade.Core.Entities;
 
+
 public class Rfq : TenantEntity
 {
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public RfqVisibility Visibility { get; set; } = RfqVisibility.Public;
     public RfqStatus Status { get; set; } = RfqStatus.Draft;
+    public ModerationStatus Moderation { get; set; } = ModerationStatus.Active;
     public DateTime? ResponseDeadline { get; set; }
     public string? DeliveryLocation { get; set; }
     public string? DeliveryTimeline { get; set; }

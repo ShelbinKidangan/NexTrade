@@ -423,6 +423,254 @@ export const dealConfirmationsApi = {
     }),
 };
 
+// ── Admin console ──────────────────────────────────────────
+
+export type AdminBusinessRow = {
+  uid: string; name: string; isVerified: boolean; trustScore: number;
+  isActive: boolean; isSuspended: boolean; suspendedAt: string | null;
+  industry: string | null; country: string | null; logo: string | null;
+  publishedItemCount: number; openRfqCount: number; complianceDocCount: number;
+  profileSource: string; createdAt: string;
+};
+export type AdminBusinessDetail = AdminBusinessRow & {
+  subdomain: string | null; verifiedAt: string | null;
+  suspensionReason: string | null; yearEstablished: number | null;
+  companySize: string | null; website: string | null; linkedInUrl: string | null;
+  about: string | null; city: string | null; countryCode: string | null;
+  userCount: number; complianceVerifiedCount: number; complianceTotalCount: number;
+};
+export type AdminBusinessFilter = {
+  page?: number; pageSize?: number; search?: string;
+  status?: string; verifiedOnly?: boolean; country?: string;
+};
+
+export type AdminComplianceDoc = {
+  uid: string; businessUid: string; businessName: string;
+  type: string; title: string; description: string | null;
+  fileUrl: string; fileName: string;
+  issuingBody: string | null; issueDate: string | null; expiryDate: string | null;
+  status: string; visibility: string; createdAt: string;
+};
+export type AdminVerificationFilter = {
+  page?: number; pageSize?: number; status?: string;
+  type?: string; country?: string; tenantUid?: string; ageDays?: number;
+};
+
+export type AdminIndustry = {
+  uid: string; name: string; slug: string; parentUid: string | null;
+  sortOrder: number; isActive: boolean;
+};
+export type AdminCountry = { uid: string; code: string; code3: string; name: string; isActive: boolean };
+export type AdminCurrency = { uid: string; code: string; name: string; symbol: string; decimalPlaces: number; isActive: boolean };
+export type AdminCatalogCategory = {
+  uid: string; name: string; slug: string; parentUid: string | null;
+  level: number; sortOrder: number; isActive: boolean;
+};
+
+export type AdminUserRow = {
+  uid: string; email: string; fullName: string;
+  isActive: boolean; isPlatformAdmin: boolean; isLockedOut: boolean;
+  tenantId: string | null; tenantName: string | null;
+  lastLoginAt: string | null; createdAt: string;
+};
+export type AdminUserFilter = {
+  page?: number; pageSize?: number; search?: string;
+  tenantUid?: string; lockedOnly?: boolean;
+};
+
+export type AdminCatalogItemRow = {
+  uid: string; title: string; type: string; status: string;
+  supplierUid: string; supplierName: string; createdAt: string;
+};
+export type AdminRfqRow = {
+  uid: string; title: string; status: string; moderation: string;
+  buyerUid: string; buyerName: string; createdAt: string;
+};
+export type AdminReviewRow = {
+  uid: string; overallRating: number; comment: string | null;
+  moderation: string;
+  reviewerUid: string; reviewedUid: string;
+  reviewerName: string | null; reviewedName: string | null;
+  createdAt: string;
+};
+export type ContentFilter = { page?: number; pageSize?: number; search?: string; status?: string };
+
+export type AdminOverview = {
+  businessesTotal: number; businessesLast30d: number;
+  verifiedBusinesses: number; verifiedRate: number;
+  publishedItems: number; openRfqs: number; dealsConfirmed: number;
+  activeUsersMonthly: number;
+  avgQuoteResponseHours: number;
+  trustDistribution: { range: string; count: number }[];
+};
+export type AdminTimeseriesPoint = { date: string; value: number };
+
+export type AdminAuditEntry = {
+  uid: string; adminUserId: number; adminEmail: string; action: string;
+  targetEntity: string | null; targetUid: string | null;
+  payload: string | null; route: string | null; method: string | null;
+  statusCode: number | null; ipAddress: string | null;
+  createdAt: string;
+};
+
+export const admin = {
+  // businesses
+  listBusinesses: (filter: AdminBusinessFilter) =>
+    apiFetch<PagedResult<AdminBusinessRow>>(
+      `/api/admin/businesses?${qs(filter as Record<string, string>)}`,
+      { auth: "admin" }
+    ),
+  getBusiness: (uid: string) =>
+    apiFetch<AdminBusinessDetail>(`/api/admin/businesses/${uid}`, { auth: "admin" }),
+  verifyBusiness: (uid: string) =>
+    apiFetch<void>(`/api/admin/businesses/${uid}/verify`, { method: "POST", auth: "admin" }),
+  suspendBusiness: (uid: string, reason: string) =>
+    apiFetch<void>(`/api/admin/businesses/${uid}/suspend`, {
+      method: "POST", body: JSON.stringify({ reason }), auth: "admin",
+    }),
+  unsuspendBusiness: (uid: string) =>
+    apiFetch<void>(`/api/admin/businesses/${uid}/unsuspend`, { method: "POST", auth: "admin" }),
+  deleteBusiness: (uid: string) =>
+    apiFetch<void>(`/api/admin/businesses/${uid}/delete`, { method: "POST", auth: "admin" }),
+
+  // verifications (compliance queue)
+  listVerifications: (filter: AdminVerificationFilter) =>
+    apiFetch<PagedResult<AdminComplianceDoc>>(
+      `/api/admin/verifications/compliance?${qs(filter as Record<string, string>)}`,
+      { auth: "admin" }
+    ),
+  approveVerification: (uid: string) =>
+    apiFetch<void>(`/api/admin/verifications/compliance/${uid}/approve`, { method: "POST", auth: "admin" }),
+  rejectVerification: (uid: string, reason: string) =>
+    apiFetch<void>(`/api/admin/verifications/compliance/${uid}/reject`, {
+      method: "POST", body: JSON.stringify({ reason }), auth: "admin",
+    }),
+  bulkApproveVerifications: (uids: string[]) =>
+    apiFetch<{ approved: number }>("/api/admin/verifications/compliance/bulk-approve", {
+      method: "POST", body: JSON.stringify({ uids }), auth: "admin",
+    }),
+
+  // reference data
+  listIndustries: () => apiFetch<AdminIndustry[]>("/api/admin/industries", { auth: "admin" }),
+  createIndustry: (data: { name: string; slug: string; parentUid?: string; sortOrder: number }) =>
+    apiFetch<AdminIndustry>("/api/admin/industries", {
+      method: "POST", body: JSON.stringify(data), auth: "admin",
+    }),
+  updateIndustry: (uid: string, data: { name?: string; slug?: string; parentUid?: string; sortOrder?: number; isActive?: boolean }) =>
+    apiFetch<void>(`/api/admin/industries/${uid}`, {
+      method: "PUT", body: JSON.stringify(data), auth: "admin",
+    }),
+  deleteIndustry: (uid: string) =>
+    apiFetch<void>(`/api/admin/industries/${uid}`, { method: "DELETE", auth: "admin" }),
+  reorderIndustries: (uids: string[]) =>
+    apiFetch<void>("/api/admin/industries/reorder", {
+      method: "POST", body: JSON.stringify({ uids }), auth: "admin",
+    }),
+
+  listCountries: () => apiFetch<AdminCountry[]>("/api/admin/countries", { auth: "admin" }),
+  createCountry: (data: { code: string; code3: string; name: string }) =>
+    apiFetch<AdminCountry>("/api/admin/countries", {
+      method: "POST", body: JSON.stringify(data), auth: "admin",
+    }),
+  updateCountry: (uid: string, data: { name?: string; isActive?: boolean }) =>
+    apiFetch<void>(`/api/admin/countries/${uid}`, {
+      method: "PUT", body: JSON.stringify(data), auth: "admin",
+    }),
+
+  listCurrencies: () => apiFetch<AdminCurrency[]>("/api/admin/currencies", { auth: "admin" }),
+  createCurrency: (data: { code: string; name: string; symbol: string; decimalPlaces: number }) =>
+    apiFetch<AdminCurrency>("/api/admin/currencies", {
+      method: "POST", body: JSON.stringify(data), auth: "admin",
+    }),
+  updateCurrency: (uid: string, data: { name?: string; symbol?: string; decimalPlaces?: number; isActive?: boolean }) =>
+    apiFetch<void>(`/api/admin/currencies/${uid}`, {
+      method: "PUT", body: JSON.stringify(data), auth: "admin",
+    }),
+
+  listAdminCatalogCategories: () =>
+    apiFetch<AdminCatalogCategory[]>("/api/admin/catalog-categories", { auth: "admin" }),
+  createAdminCatalogCategory: (data: { name: string; slug: string; parentUid?: string; sortOrder: number }) =>
+    apiFetch<AdminCatalogCategory>("/api/admin/catalog-categories", {
+      method: "POST", body: JSON.stringify(data), auth: "admin",
+    }),
+  updateAdminCatalogCategory: (uid: string, data: { name?: string; slug?: string; parentUid?: string; sortOrder?: number; isActive?: boolean }) =>
+    apiFetch<void>(`/api/admin/catalog-categories/${uid}`, {
+      method: "PUT", body: JSON.stringify(data), auth: "admin",
+    }),
+  deleteAdminCatalogCategory: (uid: string) =>
+    apiFetch<void>(`/api/admin/catalog-categories/${uid}`, { method: "DELETE", auth: "admin" }),
+
+  // users
+  listUsers: (filter: AdminUserFilter) =>
+    apiFetch<PagedResult<AdminUserRow>>(
+      `/api/admin/users?${qs(filter as Record<string, string>)}`,
+      { auth: "admin" }
+    ),
+  unlockUser: (uid: string) =>
+    apiFetch<void>(`/api/admin/users/${uid}/unlock`, { method: "POST", auth: "admin" }),
+  resetUserPassword: (uid: string, newPassword: string) =>
+    apiFetch<void>(`/api/admin/users/${uid}/reset-password`, {
+      method: "POST", body: JSON.stringify({ newPassword }), auth: "admin",
+    }),
+  promoteUser: (uid: string) =>
+    apiFetch<void>(`/api/admin/users/${uid}/promote`, { method: "POST", auth: "admin" }),
+  demoteUser: (uid: string) =>
+    apiFetch<void>(`/api/admin/users/${uid}/demote`, { method: "POST", auth: "admin" }),
+
+  // content moderation
+  listCatalogItems: (filter: ContentFilter) =>
+    apiFetch<PagedResult<AdminCatalogItemRow>>(
+      `/api/admin/content/catalog-items?${qs(filter as Record<string, string>)}`,
+      { auth: "admin" }
+    ),
+  hideCatalogItem: (uid: string) =>
+    apiFetch<void>(`/api/admin/content/catalog-items/${uid}/hide`, { method: "POST", auth: "admin" }),
+  flagCatalogItem: (uid: string) =>
+    apiFetch<void>(`/api/admin/content/catalog-items/${uid}/flag`, { method: "POST", auth: "admin" }),
+  deleteCatalogItem: (uid: string) =>
+    apiFetch<void>(`/api/admin/content/catalog-items/${uid}/delete`, { method: "POST", auth: "admin" }),
+
+  listContentRfqs: (filter: ContentFilter) =>
+    apiFetch<PagedResult<AdminRfqRow>>(
+      `/api/admin/content/rfqs?${qs(filter as Record<string, string>)}`,
+      { auth: "admin" }
+    ),
+  hideContentRfq: (uid: string) =>
+    apiFetch<void>(`/api/admin/content/rfqs/${uid}/hide`, { method: "POST", auth: "admin" }),
+  flagContentRfq: (uid: string) =>
+    apiFetch<void>(`/api/admin/content/rfqs/${uid}/flag`, { method: "POST", auth: "admin" }),
+  deleteContentRfq: (uid: string) =>
+    apiFetch<void>(`/api/admin/content/rfqs/${uid}/delete`, { method: "POST", auth: "admin" }),
+
+  listContentReviews: (filter: ContentFilter) =>
+    apiFetch<PagedResult<AdminReviewRow>>(
+      `/api/admin/content/reviews?${qs(filter as Record<string, string>)}`,
+      { auth: "admin" }
+    ),
+  hideContentReview: (uid: string) =>
+    apiFetch<void>(`/api/admin/content/reviews/${uid}/hide`, { method: "POST", auth: "admin" }),
+  flagContentReview: (uid: string) =>
+    apiFetch<void>(`/api/admin/content/reviews/${uid}/flag`, { method: "POST", auth: "admin" }),
+  deleteContentReview: (uid: string) =>
+    apiFetch<void>(`/api/admin/content/reviews/${uid}/delete`, { method: "POST", auth: "admin" }),
+
+  // metrics
+  metricsOverview: () =>
+    apiFetch<AdminOverview>("/api/admin/metrics/overview", { auth: "admin" }),
+  metricsTimeseries: (metric: string, days: number) =>
+    apiFetch<AdminTimeseriesPoint[]>(
+      `/api/admin/metrics/timeseries?metric=${metric}&days=${days}`,
+      { auth: "admin" }
+    ),
+
+  // audit log
+  listAuditLog: (filter: { page?: number; pageSize?: number; action?: string; targetEntity?: string }) =>
+    apiFetch<PagedResult<AdminAuditEntry>>(
+      `/api/admin/audit-log?${qs(filter as Record<string, string>)}`,
+      { auth: "admin" }
+    ),
+};
+
 export const connectionsApi = {
   following: () => apiFetch<ConnectionDto[]>("/api/connections/following"),
   followers: () => apiFetch<ConnectionDto[]>("/api/connections/followers"),

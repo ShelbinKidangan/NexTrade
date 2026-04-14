@@ -6,6 +6,7 @@ using NexTrade.Core.Interfaces;
 using NexTrade.Infrastructure.Data;
 using NexTrade.Infrastructure.Repositories;
 using NexTrade.Infrastructure.Services;
+using NexTrade.Infrastructure.Services.Admin;
 
 namespace NexTrade.Infrastructure;
 
@@ -51,6 +52,16 @@ public static class DependencyInjection
         services.AddScoped<ComplianceService>();
         services.AddScoped<ReviewsService>();
         services.AddScoped<TrustScoreService>();
+
+        // Admin console services
+        services.AddHttpContextAccessor();
+        services.AddScoped<IAdminAuditLog, AdminAuditLog>();
+        services.AddScoped<AdminBusinessService>();
+        services.AddScoped<AdminVerificationService>();
+        services.AddScoped<AdminReferenceDataService>();
+        services.AddScoped<AdminUserService>();
+        services.AddScoped<AdminContentService>();
+        services.AddScoped<AdminMetricsService>();
 
         // Email (Mailhog in dev)
         services.AddScoped<IEmailSender, SmtpEmailSender>();
