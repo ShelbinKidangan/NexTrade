@@ -8,7 +8,8 @@
       "Bash(mv 20260413174230_AddCatalogItemSlug.cs 20260413190000_AddCatalogItemSlug.cs)",
       "Bash(mv 20260413174230_AddCatalogItemSlug.Designer.cs 20260413190000_AddCatalogItemSlug.Designer.cs)",
       "Bash(grep -n \"ASPNETCORE_ENVIRONMENT\\\\|IsDevelopment\\\\|InitializeAsync\\\\|DemoData\" src/NexTrade.Api/Program.cs infra/docker/docker-compose*.yml)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(grep -l \"rfqs\\\\|rfq_items\\\\|rfq_targets\\\\|quotes\\\\|quote_items\\\\|deal_confirmations\" c:/Users/Razor/source/repos/EntityNext/NexTrade/src/NexTrade.Infrastructure/Migrations/*.cs)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Razor\\source\\repos\\EntityNext\\NexTrade\\src\\NexTrade.Core\\Entities",
