@@ -17,12 +17,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <Link href="/search" className="px-3 py-1.5 text-sm rounded-md text-foreground-secondary hover:text-foreground hover:bg-background-secondary">
               Discover
             </Link>
-            <Link href="/due-diligence" className="px-3 py-1.5 text-sm rounded-md text-foreground-secondary hover:text-foreground hover:bg-background-secondary">
-              Due Diligence
-            </Link>
-            <Link href="/pricing" className="px-3 py-1.5 text-sm rounded-md text-foreground-secondary hover:text-foreground hover:bg-background-secondary">
-              Pricing
-            </Link>
           </nav>
           <div className="flex-1" />
           <div className="flex items-center gap-2">

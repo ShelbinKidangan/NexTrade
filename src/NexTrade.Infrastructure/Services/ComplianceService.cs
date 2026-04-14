@@ -16,6 +16,7 @@ public class ComplianceService
     private readonly IUnitOfWork _uow;
     private readonly ITenantContext _tenant;
     private readonly BlobContainerClient _container;
+    private bool _containerReady;
 
     public ComplianceService(AppDbContext db, IUnitOfWork uow, ITenantContext tenant, IConfiguration config)
     {
@@ -28,7 +29,13 @@ public class ComplianceService
 
         var serviceClient = new BlobServiceClient(connString);
         _container = serviceClient.GetBlobContainerClient(containerName);
-        _container.CreateIfNotExists(PublicAccessType.None);
+    }
+
+    private async Task EnsureContainerAsync(CancellationToken ct)
+    {
+        if (_containerReady) return;
+        await _container.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: ct);
+        _containerReady = true;
     }
 
     public record ComplianceDocumentDto(
@@ -77,6 +84,8 @@ public class ComplianceService
         if (string.IsNullOrEmpty(file.ContentType) || !AllowedContentTypes.Contains(file.ContentType))
             return ServiceResult<ComplianceDocumentDto>.Fail(
                 $"Unsupported content type '{file.ContentType}'.", 400);
+
+        await EnsureContainerAsync(ct);
 
         var ext = Path.GetExtension(file.FileName);
         var blobName = $"{_tenant.TenantId}/{Guid.NewGuid():N}{ext}";

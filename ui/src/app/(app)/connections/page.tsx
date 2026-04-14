@@ -1,32 +1,47 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BadgeCheck, MapPin, Users, Star, MessageSquare, Check, X } from "lucide-react";
+import { BadgeCheck, Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { mockConnections, type MockConnection } from "@/lib/mock-data";
+import { connectionsApi } from "@/lib/api";
+import type { ConnectionDto } from "@/lib/types";
 
-const tabs = [
-  { label: "Connections", value: "Connection" as const },
-  { label: "Following", value: "Following" as const },
-  { label: "Followers", value: "Follower" as const },
-  { label: "Requests", value: "Request" as const },
+type TabKey = "following" | "followers";
+
+const tabs: { label: string; value: TabKey }[] = [
+  { label: "Following", value: "following" },
+  { label: "Followers", value: "followers" },
 ];
 
 export default function ConnectionsPage() {
-  const [activeTab, setActiveTab] = useState<MockConnection["type"]>("Connection");
+  const [activeTab, setActiveTab] = useState<TabKey>("following");
+  const [following, setFollowing] = useState<ConnectionDto[]>([]);
+  const [followers, setFollowers] = useState<ConnectionDto[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const x of mockConnections) c[x.type] = (c[x.type] ?? 0) + 1;
-    return c;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [fol, fr] = await Promise.all([
+          connectionsApi.following(),
+          connectionsApi.followers(),
+        ]);
+        if (cancelled) return;
+        setFollowing(fol);
+        setFollowers(fr);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const items = useMemo(
-    () => mockConnections.filter((c) => c.type === activeTab),
-    [activeTab]
+    () => (activeTab === "following" ? following : followers),
+    [activeTab, following, followers],
   );
 
   return (
@@ -34,34 +49,45 @@ export default function ConnectionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Network</h1>
-          <p className="text-sm text-foreground-secondary">Your connections, followers, and pending requests</p>
+          <p className="text-sm text-foreground-secondary">Businesses you follow and your followers</p>
         </div>
       </div>
 
       <div className="flex gap-1 border-b border-border overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setActiveTab(tab.value)}
-            className={`px-3 py-2 text-sm border-b-2 whitespace-nowrap transition-colors ${
-              activeTab === tab.value
-                ? "border-accent text-foreground font-medium"
-                : "border-transparent text-foreground-secondary hover:text-foreground"
-            }`}
-          >
-            {tab.label} <span className="text-foreground-tertiary">({counts[tab.value] ?? 0})</span>
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const count = tab.value === "following" ? following.length : followers.length;
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={`px-3 py-2 text-sm border-b-2 whitespace-nowrap transition-colors ${
+                activeTab === tab.value
+                  ? "border-accent text-foreground font-medium"
+                  : "border-transparent text-foreground-secondary hover:text-foreground"
+              }`}
+            >
+              {tab.label} <span className="text-foreground-tertiary">({count})</span>
+            </button>
+          );
+        })}
       </div>
 
-      {items.length === 0 ? (
+      {loading ? (
+        <Card>
+          <CardContent className="pt-4 text-sm text-foreground-tertiary text-center py-8">
+            Loading…
+          </CardContent>
+        </Card>
+      ) : items.length === 0 ? (
         <Card>
           <CardContent className="pt-4">
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="size-10 rounded-full bg-background-secondary flex items-center justify-center mb-3">
                 <Users className="size-5 text-foreground-tertiary" />
               </div>
-              <p className="text-sm text-foreground-secondary">Nothing here yet</p>
+              <p className="text-sm text-foreground-secondary">
+                {activeTab === "following" ? "Not following any businesses yet" : "No followers yet"}
+              </p>
               <p className="text-xs text-foreground-tertiary mt-1">
                 Discover businesses and start building your network.
               </p>
@@ -78,61 +104,40 @@ export default function ConnectionsPage() {
               <CardContent className="pt-4">
                 <div className="flex items-start gap-3 mb-3">
                   <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-background-secondary text-foreground-secondary text-lg font-semibold">
-                    {c.name.charAt(0)}
+                    {c.otherLogo ? (
+                      <img src={c.otherLogo} alt="" className="size-12 rounded-lg object-cover" />
+                    ) : (
+                      c.otherName.charAt(0)
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <Link
-                        href={`/business/${c.businessUid}`}
+                        href={`/business/${c.otherUid}`}
                         className="text-sm font-medium truncate hover:underline"
                       >
-                        {c.name}
+                        {c.otherName}
                       </Link>
-                      {c.isVerified && <BadgeCheck className="size-4 shrink-0 text-accent" />}
+                      {c.otherVerified && <BadgeCheck className="size-4 shrink-0 text-accent" />}
                     </div>
-                    <p className="text-xs text-foreground-secondary truncate">{c.industry}</p>
-                    <p className="text-[11px] text-foreground-tertiary flex items-center gap-1 mt-0.5">
-                      <MapPin className="size-3" /> {c.city}
-                    </p>
+                    {c.otherCountry && (
+                      <p className="text-[11px] text-foreground-tertiary mt-0.5">{c.otherCountry}</p>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mb-3">
-                  {c.isPreferred && (
-                    <Badge variant="warning" className="gap-1">
-                      <Star className="size-3 fill-current" /> Preferred
-                    </Badge>
-                  )}
-                  <span className="text-[11px] text-foreground-tertiary">
-                    {c.mutualCount} mutual
-                  </span>
-                </div>
-
                 <div className="flex gap-2 pt-2 border-t border-border">
-                  {c.type === "Request" ? (
-                    <>
-                      <Button size="xs" className="flex-1">
-                        <Check className="size-3" /> Accept
-                      </Button>
-                      <Button variant="outline" size="xs" className="flex-1">
-                        <X className="size-3" /> Decline
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button variant="outline" size="xs" className="flex-1">
-                        <MessageSquare className="size-3" /> Message
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="xs"
-                        className="flex-1"
-                        render={<Link href={`/business/${c.businessUid}`} />}
-                      >
-                        View
-                      </Button>
-                    </>
-                  )}
+                  <Button variant="outline" size="xs" className="flex-1">
+                    <MessageSquare className="size-3" /> Message
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    className="flex-1"
+                    render={<Link href={`/business/${c.otherUid}`} />}
+                  >
+                    View
+                  </Button>
                 </div>
               </CardContent>
             </Card>

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Eye, EyeOff, Search, Sparkles, BadgeCheck, Star, ShoppingCart, Factory } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Eye, EyeOff, Search, Sparkles, BadgeCheck, Star, ShoppingCart, Factory, Repeat, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,7 @@ import { useAuth } from "@/lib/auth";
 
 const DEMO_PASSWORD = "Demo123!";
 
-type DemoRole = "buyer" | "supplier";
+type DemoRole = "buyer" | "supplier" | "both";
 type DemoAccount = {
   email: string;
   name: string;
@@ -22,44 +23,37 @@ type DemoAccount = {
 
 const DEMO_ACCOUNTS: DemoAccount[] = [
   {
-    email: "maya@buyerco.demo",
-    name: "Maya Patel",
-    business: "BuyerCo Global Inc",
-    role: "buyer",
-    blurb: "Automotive buyer · Detroit, US",
-  },
-  {
-    email: "sasha@precision.demo",
+    email: "sasha@supplier.demo",
     name: "Sasha Kumar",
-    business: "Precision Industries Ltd",
+    business: "Precision Forge Industries",
     role: "supplier",
     blurb: "CNC machining · Pune, IN",
   },
   {
-    email: "erik@nordic.demo",
-    name: "Erik Lindqvist",
-    business: "Nordic Electronics AB",
-    role: "supplier",
-    blurb: "PCB & IoT · Stockholm, SE",
+    email: "maya@buyer.demo",
+    name: "Maya Patel",
+    business: "Atlas Procurement Co",
+    role: "buyer",
+    blurb: "Automotive buyer · Detroit, US",
   },
   {
-    email: "linh@pacific.demo",
-    name: "Linh Nguyen",
-    business: "Pacific Packaging Co",
-    role: "supplier",
-    blurb: "Flexible packaging · Ho Chi Minh, VN",
-  },
-  {
-    email: "klaus@greenchem.demo",
-    name: "Klaus Becker",
-    business: "GreenChem Solutions GmbH",
-    role: "supplier",
-    blurb: "Specialty chemicals · Hamburg, DE",
+    email: "alex@trader.demo",
+    name: "Alex Müller",
+    business: "Meridian Trade House",
+    role: "both",
+    blurb: "Sells & buys · Hamburg, DE",
   },
 ];
 
+const ROLE_META: Record<DemoRole, { label: string; icon: typeof ShoppingCart; iconClass: string }> = {
+  buyer: { label: "Buyer", icon: ShoppingCart, iconClass: "bg-accent text-white" },
+  supplier: { label: "Supplier", icon: Factory, iconClass: "bg-background-secondary text-foreground-secondary" },
+  both: { label: "Both", icon: Repeat, iconClass: "bg-warning/20 text-warning" },
+};
+
 export default function LoginPage() {
   const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -127,8 +121,8 @@ export default function LoginPage() {
               </div>
               <div className="space-y-1">
                 {DEMO_ACCOUNTS.map((acc) => {
-                  const isBuyer = acc.role === "buyer";
-                  const Icon = isBuyer ? ShoppingCart : Factory;
+                  const meta = ROLE_META[acc.role];
+                  const Icon = meta.icon;
                   const busy = quickLoginEmail === acc.email;
                   return (
                     <button
@@ -138,14 +132,14 @@ export default function LoginPage() {
                       onClick={() => quickLogin(acc)}
                       className="w-full flex items-center gap-2 rounded-md border border-border bg-background/70 px-2 py-1.5 text-left hover:border-accent/60 hover:bg-background disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                     >
-                      <div className={`flex size-7 items-center justify-center rounded-md shrink-0 ${isBuyer ? "bg-accent text-white" : "bg-background-secondary text-foreground-secondary"}`}>
+                      <div className={`flex size-7 items-center justify-center rounded-md shrink-0 ${meta.iconClass}`}>
                         <Icon className="size-3.5" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1">
                           <span className="text-xs font-medium truncate">{acc.business}</span>
                           <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 shrink-0">
-                            {isBuyer ? "Buyer" : "Supplier"}
+                            {meta.label}
                           </Badge>
                         </div>
                         <div className="text-[10px] text-foreground-tertiary truncate">{acc.blurb}</div>
@@ -156,6 +150,29 @@ export default function LoginPage() {
                     </button>
                   );
                 })}
+
+                <button
+                  type="button"
+                  disabled={quickLoginEmail !== null}
+                  onClick={() => router.push("/admin/login")}
+                  className="w-full flex items-center gap-2 rounded-md border border-border bg-background/70 px-2 py-1.5 text-left hover:border-accent/60 hover:bg-background disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                >
+                  <div className="flex size-7 items-center justify-center rounded-md shrink-0 bg-foreground text-background">
+                    <ShieldCheck className="size-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-medium truncate">Platform Administrator</span>
+                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 shrink-0">
+                        Admin
+                      </Badge>
+                    </div>
+                    <div className="text-[10px] text-foreground-tertiary truncate">
+                      admin@nextrade.local · cross-tenant console
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-medium text-accent shrink-0">Open →</span>
+                </button>
               </div>
             </div>
 

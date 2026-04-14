@@ -17,7 +17,6 @@ const navItems = [
   { label: "Suppliers", href: "/suppliers" },
   { label: "Messages", href: "/messages" },
   { label: "Compliance", href: "/compliance" },
-  { label: "Intelligence", href: "/intelligence" },
 ];
 
 export function TopNav() {

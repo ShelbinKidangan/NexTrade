@@ -16,6 +16,7 @@ public class CatalogMediaService
     private readonly IUnitOfWork _uow;
     private readonly ITenantContext _tenant;
     private readonly BlobContainerClient _container;
+    private bool _containerReady;
 
     public CatalogMediaService(AppDbContext db, IUnitOfWork uow, ITenantContext tenant, IConfiguration config)
     {
@@ -28,7 +29,13 @@ public class CatalogMediaService
 
         var serviceClient = new BlobServiceClient(connString);
         _container = serviceClient.GetBlobContainerClient(containerName);
-        _container.CreateIfNotExists(PublicAccessType.Blob);
+    }
+
+    private async Task EnsureContainerAsync(CancellationToken ct)
+    {
+        if (_containerReady) return;
+        await _container.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: ct);
+        _containerReady = true;
     }
 
     public record MediaDto(long Id, string Url, string FileName, long FileSize, bool IsPrimary, int SortOrder);
@@ -54,6 +61,8 @@ public class CatalogMediaService
             .FirstOrDefaultAsync(c => c.Uid == itemUid, ct);
         if (item is null)
             return ServiceResult<MediaDto>.Fail("Catalog item not found.", 404);
+
+        await EnsureContainerAsync(ct);
 
         var ext = Path.GetExtension(file.FileName);
         var blobName = $"{_tenant.TenantId}/{item.Uid}/{Guid.NewGuid():N}{ext}";
