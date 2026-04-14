@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { BusinessCard } from "@/components/app/business-card";
+import { DealConfirmationBanner } from "@/components/app/deal-confirmation-banner";
 import {
   mockStats, mockActivities, mockBusinesses, mockProfileCompleteness,
   mockAnalytics, mockRfqs, timeAgo, type MockActivity,
@@ -53,6 +54,8 @@ export default function DashboardPage() {
           Here&apos;s what&apos;s happening on your NexTrade profile.
         </p>
       </div>
+
+      <DealConfirmationBanner />
 
       {/* Profile completeness banner */}
       <Card className="bg-linear-to-r from-accent/10 via-accent/5 to-transparent border-accent/20">

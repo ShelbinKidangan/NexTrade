@@ -1,17 +1,22 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, BadgeCheck, Star, Clock, MapPin, Calendar, Globe, Lock,
-  Share2, MessageSquare, Sparkles, Trophy, Paperclip, TrendingUp, TrendingDown,
+  ArrowLeft, BadgeCheck, MapPin, Calendar, Globe, Lock,
+  Trophy, Send, X, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { mockRfqs, mockQuotes, type MockRfq } from "@/lib/mock-data";
+import { rfqsApi, quotesApi, dealConfirmationsApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import type {
+  RfqDetailDto, QuoteDto, CreateQuoteItemRequest, DealConfirmationDto,
+} from "@/lib/types";
 
-const statusVariant: Record<MockRfq["status"], "success" | "warning" | "secondary" | "outline" | "destructive"> = {
+const statusVariant: Record<RfqDetailDto["status"], "success" | "warning" | "secondary" | "outline" | "destructive"> = {
   Open: "success",
   Awarded: "warning",
   Draft: "outline",
@@ -19,16 +24,72 @@ const statusVariant: Record<MockRfq["status"], "success" | "warning" | "secondar
   Cancelled: "destructive",
 };
 
-const tabs = ["overview", "quotes", "compare", "activity"] as const;
-
 export default function RfqDetailPage({ params }: { params: Promise<{ uid: string }> }) {
   const { uid } = use(params);
-  const rfq = mockRfqs.find((r) => r.uid === uid) ?? mockRfqs[0];
-  const quotes = mockQuotes.filter((q) => q.rfqUid === rfq.uid);
-  const [tab, setTab] = useState<(typeof tabs)[number]>("overview");
+  const { business } = useAuth();
+  const [rfq, setRfq] = useState<RfqDetailDto | null>(null);
+  const [quotes, setQuotes] = useState<QuoteDto[]>([]);
+  const [pendingDeal, setPendingDeal] = useState<DealConfirmationDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const cheapest = quotes.length > 0 ? Math.min(...quotes.map((q) => q.unitPrice)) : 0;
-  const fastest = quotes.length > 0 ? Math.min(...quotes.map((q) => q.leadTimeDays)) : 0;
+  const load = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const r = await rfqsApi.get(uid);
+      setRfq(r);
+      const q = await quotesApi.forRfq(uid);
+      setQuotes(q);
+      // Pending deal referencing this RFQ (either side)
+      try {
+        const pending = await dealConfirmationsApi.pending();
+        setPendingDeal(pending.find((d) => d.rfqUid === uid) ?? null);
+      } catch {}
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load RFQ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid]);
+
+  if (loading) return <p className="text-sm text-foreground-secondary">Loading…</p>;
+  if (error || !rfq) return <p className="text-sm text-danger">{error || "RFQ not found"}</p>;
+
+  const isBuyer = business?.uid === rfq.buyerBusinessUid;
+  const myQuote = quotes.find((q) => q.supplierBusinessUid === business?.uid);
+  const canQuote = !isBuyer && rfq.status === "Open" && !myQuote;
+
+  async function handlePublish() {
+    setBusy(true);
+    try { await rfqsApi.publish(uid); await load(); }
+    finally { setBusy(false); }
+  }
+  async function handleClose() {
+    setBusy(true);
+    try { await rfqsApi.close(uid); await load(); }
+    finally { setBusy(false); }
+  }
+  async function handleAward(quoteUid: string) {
+    if (!confirm("Award this quote? This will reject all other quotes and move the RFQ to Awarded.")) return;
+    setBusy(true);
+    try { await quotesApi.award(uid, quoteUid); await load(); }
+    catch (e) { alert(e instanceof Error ? e.message : "Failed to award"); }
+    finally { setBusy(false); }
+  }
+  async function handleConfirmDeal() {
+    if (!pendingDeal) return;
+    setBusy(true);
+    try { await dealConfirmationsApi.confirm(pendingDeal.uid); await load(); }
+    finally { setBusy(false); }
+  }
 
   return (
     <div className="space-y-6">
@@ -38,270 +99,371 @@ export default function RfqDetailPage({ params }: { params: Promise<{ uid: strin
         </Button>
       </div>
 
+      {/* Deal confirmation banner */}
+      {pendingDeal && (
+        <Card className="bg-warning-subtle/30 border-warning/30">
+          <CardContent className="pt-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle2 className="size-4 text-warning" />
+                  <h3 className="text-sm font-medium">Deal confirmation pending</h3>
+                </div>
+                <p className="text-xs text-foreground-secondary">
+                  Confirm the off-platform deal with{" "}
+                  <strong>
+                    {isBuyer ? pendingDeal.supplierBusinessName : pendingDeal.buyerBusinessName}
+                  </strong>{" "}
+                  so both sides have a shared record. This unlocks reviews.
+                </p>
+              </div>
+              <Button size="sm" onClick={handleConfirmDeal} disabled={busy}>
+                Confirm deal
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-foreground-tertiary">#{rfq.uid.replace("rfq-", "")}</span>
             <Badge variant={statusVariant[rfq.status]}>{rfq.status}</Badge>
             <Badge variant="outline" className="gap-1">
               {rfq.visibility === "Public" ? <Globe className="size-3" /> : <Lock className="size-3" />}
               {rfq.visibility}
             </Badge>
+            <span className="text-xs text-foreground-tertiary">
+              by {rfq.buyerBusinessName}
+            </span>
           </div>
           <h1 className="text-xl font-semibold mt-1">{rfq.title}</h1>
-          <p className="text-sm text-foreground-secondary max-w-2xl mt-1">{rfq.description}</p>
+          {rfq.description && (
+            <p className="text-sm text-foreground-secondary max-w-2xl mt-1">{rfq.description}</p>
+          )}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-foreground-tertiary">
-            <span className="flex items-center gap-1">
-              <MapPin className="size-3" /> {rfq.deliveryLocation}
-            </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="size-3" /> Due {new Date(rfq.responseDeadline).toLocaleDateString()}
-            </span>
-            <span>{rfq.itemCount} line {rfq.itemCount === 1 ? "item" : "items"}</span>
-            <span>· {rfq.category}</span>
+            {rfq.deliveryLocation && (
+              <span className="flex items-center gap-1">
+                <MapPin className="size-3" /> {rfq.deliveryLocation}
+              </span>
+            )}
+            {rfq.responseDeadline && (
+              <span className="flex items-center gap-1">
+                <Calendar className="size-3" /> Due {new Date(rfq.responseDeadline).toLocaleDateString()}
+              </span>
+            )}
+            <span>{rfq.items.length} line {rfq.items.length === 1 ? "item" : "items"}</span>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Share2 className="size-4" /> Share link
-          </Button>
-          <Button size="sm">
-            <Trophy className="size-4" /> Award quote
-          </Button>
+          {isBuyer && rfq.status === "Draft" && (
+            <Button size="sm" onClick={handlePublish} disabled={busy}>Publish</Button>
+          )}
+          {isBuyer && rfq.status === "Open" && (
+            <>
+              <Button variant="outline" size="sm" onClick={handleClose} disabled={busy}>Close</Button>
+              <Button size="sm" render={<Link href={`/rfqs/${uid}/compare`} />}>
+                <Trophy className="size-4" /> Compare & award
+              </Button>
+            </>
+          )}
+          {canQuote && (
+            <Button size="sm" onClick={() => setShowQuoteForm(true)}>
+              <Send className="size-4" /> Submit quote
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Quote stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card><CardContent className="pt-4">
-          <div className="text-2xl font-semibold">{quotes.length}</div>
-          <div className="text-xs text-foreground-secondary">Quotes received</div>
-        </CardContent></Card>
-        <Card><CardContent className="pt-4">
-          <div className="text-2xl font-semibold">${cheapest}</div>
-          <div className="text-xs text-foreground-secondary">Lowest unit price</div>
-        </CardContent></Card>
-        <Card><CardContent className="pt-4">
-          <div className="text-2xl font-semibold">{fastest}d</div>
-          <div className="text-xs text-foreground-secondary">Shortest lead time</div>
-        </CardContent></Card>
-        <Card><CardContent className="pt-4">
-          <div className="text-2xl font-semibold">4</div>
-          <div className="text-xs text-foreground-secondary">Invited suppliers</div>
-        </CardContent></Card>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-3 py-2 text-sm capitalize border-b-2 transition-colors ${
-              tab === t
-                ? "border-accent text-foreground font-medium"
-                : "border-transparent text-foreground-secondary hover:text-foreground"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {tab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardContent className="pt-4">
-                <h3 className="text-sm font-medium mb-3">Line items</h3>
-                <div className="space-y-2">
-                  {Array.from({ length: rfq.itemCount }).map((_, i) => (
-                    <div key={i} className="flex items-center justify-between border-b border-border last:border-0 py-2">
-                      <div>
-                        <div className="text-sm font-medium">Line item {i + 1}</div>
-                        <div className="text-xs text-foreground-secondary">
-                          {i === 0 ? "Precision CNC bracket — 6061-T6 aluminum, ±0.02mm tolerance" : i === 1 ? "Packaging, labeling, barcode, CoC" : "Anodized finish per spec"}
-                        </div>
-                      </div>
-                      <div className="text-xs">
-                        <span className="font-medium">{i === 0 ? "500 units" : i === 1 ? "1 lot" : "500 units"}</span>
-                      </div>
-                    </div>
-                  ))}
+      {/* Line items */}
+      <Card>
+        <CardContent className="pt-4">
+          <h3 className="text-sm font-medium mb-3">Line items</h3>
+          <div className="space-y-2">
+            {rfq.items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between border-b border-border last:border-0 py-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">{item.description}</div>
+                  {item.specifications && (
+                    <div className="text-xs text-foreground-secondary">{item.specifications}</div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-4">
-                <h3 className="text-sm font-medium mb-3">Attachments</h3>
-                <div className="flex flex-wrap gap-2">
-                  {["drawing-v3.pdf", "spec-sheet.pdf", "terms.docx"].map((f) => (
-                    <div key={f} className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-xs">
-                      <Paperclip className="size-3 text-foreground-tertiary" />
-                      {f}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                {item.quantity && (
+                  <div className="text-xs font-medium shrink-0">
+                    {item.quantity} {item.unitOfMeasure ?? ""}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="space-y-4">
-            <Card className="bg-accent/5 border-accent/20">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="size-4 text-accent" />
-                  <h3 className="text-sm font-medium">AI summary</h3>
-                </div>
-                <p className="text-xs text-foreground-secondary leading-relaxed">
-                  You&apos;ve received <strong className="text-foreground">{quotes.length} quotes</strong>. Acme Metals offers the best balance of price and trust (verified, 4.9★). PrecisionCast is cheapest at $9.50 but not verified — consider requesting samples first. Lead times range from 10–21 days.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
-
-      {tab === "quotes" && (
-        <div className="space-y-3">
-          {quotes.map((q) => (
-            <Card key={q.uid} className="transition-all hover:border-border-strong">
-              <CardContent className="pt-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-background-secondary font-semibold">
-                    {q.businessName.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Link href={`/business/${q.businessUid}`} className="text-sm font-medium hover:text-accent">
-                        {q.businessName}
-                      </Link>
-                      {q.isVerified && <BadgeCheck className="size-4 text-accent" />}
-                      <span className="flex items-center gap-0.5 text-xs text-foreground-secondary">
-                        <Star className="size-3 fill-warning text-warning" />
-                        {q.trustScore.toFixed(1)}
-                      </span>
-                      <Badge variant={q.status === "Shortlisted" ? "success" : q.status === "Under Review" ? "warning" : "outline"}>
-                        {q.status}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                      <Metric label="Unit price" value={`$${q.unitPrice}`} highlight={q.unitPrice === cheapest} />
-                      <Metric label="Total" value={`$${q.totalPrice.toLocaleString()}`} />
-                      <Metric label="Lead time" value={`${q.leadTimeDays} days`} highlight={q.leadTimeDays === fastest} />
-                      <Metric label="Terms" value={q.paymentTerms} />
-                    </div>
-                    <p className="text-xs text-foreground-secondary mt-3">{q.notes}</p>
-                    <div className="flex items-center gap-3 text-[11px] text-foreground-tertiary mt-2">
-                      <span>{q.incoterms}</span>
-                      <span>· Valid until {new Date(q.validUntil).toLocaleDateString()}</span>
-                      <span className="flex items-center gap-1">
-                        <Paperclip className="size-3" /> {q.attachmentCount}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1 shrink-0">
-                    <Button size="xs">
-                      <MessageSquare className="size-3" /> Negotiate
-                    </Button>
-                    <Button variant="outline" size="xs">Shortlist</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {tab === "compare" && (
-        <Card>
-          <CardContent className="pt-4 overflow-x-auto">
-            <h3 className="text-sm font-medium mb-3">Side-by-side comparison</h3>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border text-left">
-                  <th className="py-2 pr-3 font-medium text-foreground-secondary">Criterion</th>
-                  {quotes.map((q) => (
-                    <th key={q.uid} className="py-2 px-2 font-medium min-w-[140px]">
-                      <div className="flex items-center gap-1">
-                        {q.businessName.split(" ")[0]}
-                        {q.isVerified && <BadgeCheck className="size-3 text-accent" />}
-                      </div>
-                      <div className="text-[10px] text-foreground-tertiary font-normal">Trust {q.trustScore.toFixed(1)}</div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                <CompareRow label="Unit price" values={quotes.map((q) => `$${q.unitPrice}`)} best={quotes.findIndex((q) => q.unitPrice === cheapest)} />
-                <CompareRow label="Total price" values={quotes.map((q) => `$${q.totalPrice.toLocaleString()}`)} />
-                <CompareRow label="Lead time" values={quotes.map((q) => `${q.leadTimeDays}d`)} best={quotes.findIndex((q) => q.leadTimeDays === fastest)} />
-                <CompareRow label="Payment terms" values={quotes.map((q) => q.paymentTerms)} />
-                <CompareRow label="Incoterms" values={quotes.map((q) => q.incoterms)} />
-                <CompareRow label="Verified" values={quotes.map((q) => (q.isVerified ? "Yes" : "No"))} />
-                <CompareRow label="Trust score" values={quotes.map((q) => q.trustScore.toFixed(1))} />
-                <CompareRow label="Valid until" values={quotes.map((q) => new Date(q.validUntil).toLocaleDateString())} />
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      )}
-
-      {tab === "activity" && (
+      {/* Targeted suppliers */}
+      {isBuyer && rfq.visibility === "Targeted" && rfq.targets.length > 0 && (
         <Card>
           <CardContent className="pt-4">
-            <ul className="divide-y divide-border">
-              {[
-                { when: "2026-04-13 09:42", who: "Acme Metals", what: "Sent a message: Sending revised quote shortly..." },
-                { when: "2026-04-12 16:00", who: "Robotica Automation", what: "Submitted quote ($14/unit)" },
-                { when: "2026-04-12 10:00", who: "Acme Metals", what: "Submitted quote ($11/unit)" },
-                { when: "2026-04-11 14:00", who: "SteelWorks Global", what: "Submitted quote ($13.50/unit)" },
-                { when: "2026-04-10 09:30", who: "PrecisionCast Foundry", what: "Submitted quote ($9.50/unit)" },
-                { when: "2026-04-08 09:00", who: "You", what: "Published RFQ" },
-              ].map((a, i) => (
-                <li key={i} className="flex items-start gap-3 py-2">
-                  <Clock className="size-3.5 text-foreground-tertiary mt-1 shrink-0" />
-                  <div className="flex-1 text-xs">
-                    <div><span className="font-medium">{a.who}</span> {a.what}</div>
-                    <div className="text-[11px] text-foreground-tertiary">{a.when}</div>
-                  </div>
-                </li>
+            <h3 className="text-sm font-medium mb-3">Invited suppliers</h3>
+            <div className="flex flex-wrap gap-2">
+              {rfq.targets.map((t) => (
+                <Badge key={t.supplierBusinessUid} variant="outline">
+                  {t.supplierName ?? t.supplierBusinessUid}
+                </Badge>
               ))}
-            </ul>
+            </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Quote list / quote composer */}
+      <Card>
+        <CardContent className="pt-4">
+          <h3 className="text-sm font-medium mb-3">
+            {isBuyer ? `Quotes received (${quotes.length})` : "Your quote"}
+          </h3>
+          {quotes.length === 0 ? (
+            <p className="text-xs text-foreground-tertiary">No quotes yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {quotes.map((q) => (
+                <div
+                  key={q.uid}
+                  className="border border-border rounded-md p-3"
+                >
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="text-sm font-medium">{q.supplierBusinessName}</span>
+                    {q.supplierVerified && <BadgeCheck className="size-4 text-accent" />}
+                    <Badge variant={q.status === "Accepted" ? "success" : q.status === "Rejected" ? "destructive" : "outline"}>
+                      {q.status}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <Metric label="Total" value={q.totalAmount ? `${q.currencyCode ?? ""} ${q.totalAmount}` : "—"} />
+                    <Metric
+                      label="Lead time"
+                      value={
+                        q.items[0]?.leadTimeDays
+                          ? `${q.items[0].leadTimeDays} days`
+                          : "—"
+                      }
+                    />
+                    <Metric
+                      label="Valid until"
+                      value={q.validUntil ? new Date(q.validUntil).toLocaleDateString() : "—"}
+                    />
+                    <Metric label="Line items" value={`${q.items.length}`} />
+                  </div>
+                  {q.notes && (
+                    <p className="text-xs text-foreground-secondary mt-2">{q.notes}</p>
+                  )}
+                  {isBuyer && rfq.status === "Open" && q.status !== "Withdrawn" && (
+                    <div className="mt-3">
+                      <Button size="xs" onClick={() => handleAward(q.uid)} disabled={busy}>
+                        Award this quote
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {showQuoteForm && (
+        <QuoteComposer
+          rfq={rfq}
+          onClose={() => setShowQuoteForm(false)}
+          onSubmitted={() => {
+            setShowQuoteForm(false);
+            load();
+          }}
+        />
       )}
     </div>
   );
 }
 
-function Metric({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div className="text-[11px] text-foreground-tertiary">{label}</div>
-      <div className={`text-sm font-medium flex items-center gap-1 ${highlight ? "text-success" : ""}`}>
-        {value}
-        {highlight && <TrendingDown className="size-3" />}
-      </div>
+      <div className="text-sm font-medium">{value}</div>
     </div>
   );
 }
 
-function CompareRow({ label, values, best }: { label: string; values: string[]; best?: number }) {
+function QuoteComposer({
+  rfq, onClose, onSubmitted,
+}: {
+  rfq: RfqDetailDto;
+  onClose: () => void;
+  onSubmitted: () => void;
+}) {
+  type Row = {
+    rfqItemId: number;
+    description: string;
+    unitPrice: string;
+    quantity: string;
+    leadTimeDays: string;
+    minOrderQuantity: string;
+    incoterms: string;
+  };
+  const [rows, setRows] = useState<Row[]>(
+    rfq.items.map((i) => ({
+      rfqItemId: i.id,
+      description: i.description,
+      unitPrice: "",
+      quantity: i.quantity?.toString() ?? "1",
+      leadTimeDays: "",
+      minOrderQuantity: "",
+      incoterms: "",
+    }))
+  );
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [notes, setNotes] = useState("");
+  const [validUntil, setValidUntil] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const totalAmount = rows.reduce((sum, r) => {
+    const up = Number(r.unitPrice) || 0;
+    const qty = Number(r.quantity) || 0;
+    return sum + up * qty;
+  }, 0);
+
+  const setRow = (i: number, field: keyof Row, value: string) =>
+    setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const items: CreateQuoteItemRequest[] = rows
+        .filter((r) => r.unitPrice && r.quantity)
+        .map((r, idx) => ({
+          rfqItemId: r.rfqItemId,
+          unitPrice: Number(r.unitPrice),
+          quantity: Number(r.quantity),
+          totalPrice: Number(r.unitPrice) * Number(r.quantity),
+          leadTimeDays: r.leadTimeDays ? Number(r.leadTimeDays) : undefined,
+          minOrderQuantity: r.minOrderQuantity ? Number(r.minOrderQuantity) : undefined,
+          incoterms: r.incoterms || undefined,
+          sortOrder: idx,
+        }));
+      if (items.length === 0) throw new Error("At least one priced line item is required");
+
+      const created = await quotesApi.create(rfq.uid, {
+        totalAmount,
+        currencyCode,
+        validUntil: validUntil ? new Date(validUntil).toISOString() : undefined,
+        notes: notes || undefined,
+        items,
+      });
+      await quotesApi.submit(created.uid);
+      onSubmitted();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit quote");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <tr>
-      <td className="py-2 pr-3 text-foreground-secondary">{label}</td>
-      {values.map((v, i) => (
-        <td
-          key={i}
-          className={`py-2 px-2 ${i === best ? "font-semibold text-success bg-success-subtle/30" : ""}`}
-        >
-          {v}
-          {i === best && <TrendingUp className="inline size-3 ml-1" />}
-        </td>
-      ))}
-    </tr>
+    <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto p-4">
+      <Card className="w-full max-w-2xl my-8">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold">Submit quote</h2>
+            <Button variant="ghost" size="xs" onClick={onClose}>
+              <X className="size-4" />
+            </Button>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && <p className="text-xs text-danger">{error}</p>}
+
+            <div className="space-y-2">
+              {rows.map((r, i) => (
+                <div key={r.rfqItemId} className="border border-border rounded p-2 space-y-2">
+                  <div className="text-sm font-medium">{r.description}</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Unit price"
+                      value={r.unitPrice}
+                      onChange={(e) => setRow(i, "unitPrice", e.target.value)}
+                      required
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Quantity"
+                      value={r.quantity}
+                      onChange={(e) => setRow(i, "quantity", e.target.value)}
+                      required
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Lead days"
+                      value={r.leadTimeDays}
+                      onChange={(e) => setRow(i, "leadTimeDays", e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      type="number"
+                      placeholder="MOQ"
+                      value={r.minOrderQuantity}
+                      onChange={(e) => setRow(i, "minOrderQuantity", e.target.value)}
+                    />
+                    <Input
+                      placeholder="Incoterms (e.g. FOB, CIF)"
+                      value={r.incoterms}
+                      onChange={(e) => setRow(i, "incoterms", e.target.value)}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-foreground-secondary">Currency</label>
+                <Input value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground-secondary">Valid until</label>
+                <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-foreground-secondary">Notes</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="w-full rounded-md border border-input bg-transparent px-2.5 py-1.5 text-sm"
+                placeholder="Terms, incoterms, payment expectations…"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="text-sm">
+                Total: <strong>{currencyCode} {totalAmount.toFixed(2)}</strong>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Submitting…" : "Submit quote"}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

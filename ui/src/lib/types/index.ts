@@ -281,3 +281,173 @@ export interface FollowStatusDto {
   isFollowing: boolean;
   followerCount: number;
 }
+
+// RFQ + Quote
+export interface RfqItemDto {
+  id: number;
+  description: string;
+  specifications: string | null;
+  quantity: number | null;
+  unitOfMeasure: string | null;
+  categoryUid: string | null;
+  sortOrder: number;
+}
+
+export interface RfqTargetDto {
+  supplierBusinessUid: string;
+  supplierName: string | null;
+  sentAt: string | null;
+}
+
+export interface RfqDto {
+  uid: string;
+  buyerBusinessUid: string;
+  buyerBusinessName: string;
+  title: string;
+  description: string | null;
+  visibility: "Public" | "Targeted";
+  status: "Draft" | "Open" | "Closed" | "Awarded" | "Cancelled";
+  responseDeadline: string | null;
+  deliveryLocation: string | null;
+  deliveryTimeline: string | null;
+  attachments: string[];
+  itemCount: number;
+  quoteCount: number;
+  createdAt: string;
+}
+
+export interface RfqDetailDto {
+  uid: string;
+  buyerBusinessUid: string;
+  buyerBusinessName: string;
+  title: string;
+  description: string | null;
+  visibility: "Public" | "Targeted";
+  status: "Draft" | "Open" | "Closed" | "Awarded" | "Cancelled";
+  responseDeadline: string | null;
+  deliveryLocation: string | null;
+  deliveryTimeline: string | null;
+  attachments: string[];
+  items: RfqItemDto[];
+  targets: RfqTargetDto[];
+  createdAt: string;
+}
+
+export interface CreateRfqItemRequest {
+  description: string;
+  specifications?: string;
+  quantity?: number;
+  unitOfMeasure?: string;
+  categoryUid?: string;
+  sortOrder?: number;
+}
+
+export interface CreateRfqRequest {
+  title: string;
+  description?: string;
+  visibility: "Public" | "Targeted";
+  responseDeadline?: string;
+  deliveryLocation?: string;
+  deliveryTimeline?: string;
+  attachments?: string[];
+  items: CreateRfqItemRequest[];
+  targetedSupplierUids?: string[];
+}
+
+export interface QuoteItemDto {
+  id: number;
+  rfqItemId: number | null;
+  unitPrice: number;
+  quantity: number;
+  totalPrice: number;
+  leadTimeDays: number | null;
+  minOrderQuantity: number | null;
+  incoterms: string | null;
+  notes: string | null;
+  sortOrder: number;
+}
+
+export interface QuoteDto {
+  uid: string;
+  rfqUid: string;
+  supplierBusinessUid: string;
+  supplierBusinessName: string;
+  supplierVerified: boolean;
+  supplierTrustScore: number;
+  status: "Draft" | "Submitted" | "Revised" | "Accepted" | "Rejected" | "Withdrawn";
+  totalAmount: number | null;
+  currencyCode: string | null;
+  validUntil: string | null;
+  notes: string | null;
+  attachments: string[];
+  items: QuoteItemDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateQuoteItemRequest {
+  rfqItemId?: number | null;
+  unitPrice: number;
+  quantity: number;
+  totalPrice: number;
+  leadTimeDays?: number;
+  minOrderQuantity?: number;
+  incoterms?: string;
+  notes?: string;
+  sortOrder?: number;
+}
+
+export interface CreateQuoteRequest {
+  totalAmount?: number;
+  currencyCode?: string;
+  validUntil?: string;
+  notes?: string;
+  attachments?: string[];
+  items: CreateQuoteItemRequest[];
+}
+
+export interface ComparisonCellDto {
+  quoteUid: string;
+  unitPrice: number | null;
+  totalPrice: number | null;
+  leadTimeDays: number | null;
+}
+
+export interface ComparisonRowDto {
+  rfqItemId: number | null;
+  description: string;
+  cells: ComparisonCellDto[];
+}
+
+export interface ComparisonDto {
+  rfqUid: string;
+  rfqTitle: string;
+  quotes: QuoteDto[];
+  rows: ComparisonRowDto[];
+}
+
+export interface DealConfirmationDto {
+  uid: string;
+  rfqUid: string | null;
+  rfqTitle: string | null;
+  quoteUid: string | null;
+  buyerBusinessUid: string;
+  buyerBusinessName: string;
+  supplierBusinessUid: string;
+  supplierBusinessName: string;
+  buyerConfirmed: boolean;
+  buyerConfirmedAt: string | null;
+  supplierConfirmed: boolean;
+  supplierConfirmedAt: string | null;
+  confirmedAt: string | null;
+  dealValue: number | null;
+  currencyCode: string | null;
+  createdAt: string;
+}
+
+export interface CreateStandaloneDealRequest {
+  counterpartyBusinessUid: string;
+  currentTenantIsBuyer: boolean;
+  dealValue?: number;
+  currencyCode?: string;
+}

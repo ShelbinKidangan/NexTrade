@@ -129,6 +129,7 @@ public class AppDbContext(
         builder.Entity<Rfq>(e =>
         {
             e.Property(r => r.Attachments).HasColumnType("jsonb");
+            e.HasIndex(r => new { r.TenantId, r.Status });
         });
         builder.Entity<RfqItem>().Property(r => r.Specifications).HasColumnType("jsonb");
         builder.Entity<Quote>(e =>

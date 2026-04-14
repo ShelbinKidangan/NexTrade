@@ -1,4 +1,5 @@
 using MassTransit;
+using NexTrade.Consumers;
 using NexTrade.Infrastructure;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -8,8 +9,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddMassTransit(x =>
 {
-    // Register consumers here as they are built:
-    // x.AddConsumer<SomeConsumer>();
+    x.AddConsumer<RfqNotificationConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {

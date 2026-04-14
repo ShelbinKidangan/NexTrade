@@ -27,6 +27,8 @@ public class QuoteItem : ChildEntity
     public decimal Quantity { get; set; }
     public decimal TotalPrice { get; set; }
     public int? LeadTimeDays { get; set; }
+    public decimal? MinOrderQuantity { get; set; }
+    public string? Incoterms { get; set; }
     public string? Notes { get; set; }
     public int SortOrder { get; set; }
 

@@ -161,6 +161,9 @@ import type {
   PublicBusinessProfileDto,
   SavedSupplierDto, SupplierListDto,
   ConnectionDto, FollowStatusDto,
+  RfqDto, RfqDetailDto, CreateRfqRequest,
+  QuoteDto, CreateQuoteRequest, ComparisonDto,
+  DealConfirmationDto, CreateStandaloneDealRequest,
 } from "@/lib/types";
 
 function qs(params: Record<string, string | number | boolean | undefined | null>): string {
@@ -301,6 +304,59 @@ export const savedSuppliersApi = {
     }),
   deleteList: (uid: string) =>
     apiFetch<void>(`/api/saved-suppliers/lists/${uid}`, { method: "DELETE" }),
+};
+
+type RfqListFilter = { page?: number; pageSize?: number; search?: string; status?: string };
+
+export const rfqsApi = {
+  mine: (filter: RfqListFilter = {}) =>
+    apiFetch<PagedResult<RfqDto>>(`/api/rfqs/mine?${qs(filter as Record<string, string>)}`),
+  targeted: (filter: RfqListFilter = {}) =>
+    apiFetch<PagedResult<RfqDto>>(`/api/rfqs/targeted?${qs(filter as Record<string, string>)}`),
+  public: (filter: RfqListFilter = {}) =>
+    apiFetch<PagedResult<RfqDto>>(`/api/rfqs/public?${qs(filter as Record<string, string>)}`, { auth: "none" }),
+  get: (uid: string) => apiFetch<RfqDetailDto>(`/api/rfqs/${uid}`),
+  create: (data: CreateRfqRequest) =>
+    apiFetch<RfqDto>("/api/rfqs", { method: "POST", body: JSON.stringify(data) }),
+  update: (uid: string, data: Partial<CreateRfqRequest>) =>
+    apiFetch<RfqDto>(`/api/rfqs/${uid}`, { method: "PATCH", body: JSON.stringify(data) }),
+  publish: (uid: string) =>
+    apiFetch<void>(`/api/rfqs/${uid}/publish`, { method: "POST" }),
+  close: (uid: string) =>
+    apiFetch<void>(`/api/rfqs/${uid}/close`, { method: "POST" }),
+  cancel: (uid: string) =>
+    apiFetch<void>(`/api/rfqs/${uid}/cancel`, { method: "POST" }),
+};
+
+export const quotesApi = {
+  forRfq: (rfqUid: string) =>
+    apiFetch<QuoteDto[]>(`/api/rfqs/${rfqUid}/quotes`),
+  create: (rfqUid: string, data: CreateQuoteRequest) =>
+    apiFetch<QuoteDto>(`/api/rfqs/${rfqUid}/quotes`, { method: "POST", body: JSON.stringify(data) }),
+  update: (uid: string, data: Partial<CreateQuoteRequest>) =>
+    apiFetch<QuoteDto>(`/api/quotes/${uid}`, { method: "PATCH", body: JSON.stringify(data) }),
+  submit: (uid: string) =>
+    apiFetch<void>(`/api/quotes/${uid}/submit`, { method: "POST" }),
+  withdraw: (uid: string) =>
+    apiFetch<void>(`/api/quotes/${uid}/withdraw`, { method: "POST" }),
+  comparison: (rfqUid: string) =>
+    apiFetch<ComparisonDto>(`/api/rfqs/${rfqUid}/quotes/comparison`),
+  award: (rfqUid: string, quoteUid: string) =>
+    apiFetch<void>(`/api/rfqs/${rfqUid}/award`, {
+      method: "POST", body: JSON.stringify({ quoteUid }),
+    }),
+};
+
+export const dealConfirmationsApi = {
+  pending: () => apiFetch<DealConfirmationDto[]>("/api/deal-confirmations/pending"),
+  mine: () => apiFetch<DealConfirmationDto[]>("/api/deal-confirmations/mine"),
+  get: (uid: string) => apiFetch<DealConfirmationDto>(`/api/deal-confirmations/${uid}`),
+  confirm: (uid: string) =>
+    apiFetch<void>(`/api/deal-confirmations/${uid}/confirm`, { method: "POST" }),
+  createStandalone: (data: CreateStandaloneDealRequest) =>
+    apiFetch<DealConfirmationDto>("/api/deal-confirmations", {
+      method: "POST", body: JSON.stringify(data),
+    }),
 };
 
 export const connectionsApi = {
