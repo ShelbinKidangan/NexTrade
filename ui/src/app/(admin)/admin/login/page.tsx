@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { ShieldCheck, Eye, EyeOff, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authApi, session, ApiError } from "@/lib/api";
+
+const DEMO_ADMIN_EMAIL = "admin@nextrade.local";
+const DEMO_ADMIN_PASSWORD = "Admin123!";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -17,16 +20,24 @@ export default function AdminLoginPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    await signIn(email, password);
+  }
+
+  async function signIn(targetEmail: string, targetPassword: string) {
     setError("");
     setLoading(true);
     try {
-      const res = await authApi.adminLogin({ email, password });
+      const res = await authApi.adminLogin({ email: targetEmail, password: targetPassword });
       session.setAdmin(res.token, res.user);
       router.push("/admin/dashboard");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Sign-in failed. Please try again.");
       setLoading(false);
     }
+  }
+
+  function quickLogin() {
+    void signIn(DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD);
   }
 
   return (
@@ -46,6 +57,28 @@ export default function AdminLoginPage() {
         <p className="text-xs text-foreground-secondary mt-0.5">
           Restricted to seeded platform administrators.
         </p>
+
+        <div className="mt-5 rounded-lg border border-dashed border-accent/40 bg-accent-subtle/40 p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="size-4 text-accent shrink-0" />
+            <p className="text-xs font-medium flex-1">Quick-login as platform admin</p>
+          </div>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={quickLogin}
+            className="w-full flex items-center gap-2 rounded-md border border-border bg-background/70 px-2 py-1.5 text-left hover:border-accent/60 hover:bg-background disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          >
+            <div className="flex size-7 items-center justify-center rounded-md shrink-0 bg-foreground text-background">
+              <ShieldCheck className="size-3.5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-medium truncate">{DEMO_ADMIN_EMAIL}</div>
+              <div className="text-[10px] text-foreground-tertiary font-mono truncate">{DEMO_ADMIN_PASSWORD}</div>
+            </div>
+            <span className="text-[10px] font-medium text-accent shrink-0">Sign in</span>
+          </button>
+        </div>
 
         <form onSubmit={submit} className="mt-5 space-y-3">
           {error && (

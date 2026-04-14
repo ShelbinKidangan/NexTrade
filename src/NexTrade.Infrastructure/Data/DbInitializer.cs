@@ -24,9 +24,11 @@ public static class DbInitializer
         await SeedIndustriesAsync(db, ct);
         await SeedCountriesAsync(db, ct);
         await SeedCurrenciesAsync(db, ct);
+        await SeedCatalogCategoriesAsync(db, ct);
         await db.SaveChangesAsync(ct);
 
         await SeedPlatformAdminAsync(sp, ct);
+        await DemoDataSeeder.SeedAsync(services, ct);
 
         logger.LogInformation("Database initialization complete.");
     }
@@ -159,6 +161,67 @@ public static class DbInitializer
         {
             if (!existing.Contains(code))
                 db.Currencies.Add(new Currency { Code = code, Name = name, Symbol = symbol, DecimalPlaces = decimals, IsActive = true });
+        }
+    }
+
+    // Level-0 parent categories plus a handful of level-1 children so the discover
+    // filter and catalog picker have something to show on a fresh install. Platform
+    // admins can extend the tree later via /api/catalog-categories.
+    private static readonly (string Slug, string Name, string? ParentSlug, int Sort)[] DefaultCatalogCategories =
+    [
+        ("raw-materials", "Raw Materials", null, 10),
+        ("metals-alloys", "Metals & Alloys", "raw-materials", 11),
+        ("polymers-resins", "Polymers & Resins", "raw-materials", 12),
+        ("chemicals", "Chemicals", "raw-materials", 13),
+
+        ("industrial-equipment", "Industrial Equipment", null, 20),
+        ("cnc-machining", "CNC Machining", "industrial-equipment", 21),
+        ("pumps-valves", "Pumps & Valves", "industrial-equipment", 22),
+        ("motors-drives", "Motors & Drives", "industrial-equipment", 23),
+
+        ("electronics", "Electronics & Components", null, 30),
+        ("pcb-assembly", "PCB Assembly", "electronics", 31),
+        ("sensors", "Sensors & Instrumentation", "electronics", 32),
+
+        ("packaging", "Packaging & Labels", null, 40),
+        ("rigid-packaging", "Rigid Packaging", "packaging", 41),
+        ("flexible-packaging", "Flexible Packaging", "packaging", 42),
+
+        ("logistics-services", "Logistics & Services", null, 50),
+        ("freight-forwarding", "Freight Forwarding", "logistics-services", 51),
+        ("warehousing", "Warehousing", "logistics-services", 52),
+
+        ("professional-services", "Professional Services", null, 60),
+        ("engineering-design", "Engineering & Design", "professional-services", 61),
+        ("quality-testing", "Quality & Testing", "professional-services", 62),
+    ];
+
+    private static async Task SeedCatalogCategoriesAsync(AppDbContext db, CancellationToken ct)
+    {
+        var existing = await db.CatalogCategories.ToDictionaryAsync(c => c.Slug, ct);
+
+        foreach (var (slug, name, parentSlug, sort) in DefaultCatalogCategories.Where(c => c.ParentSlug is null))
+        {
+            if (existing.ContainsKey(slug)) continue;
+            db.CatalogCategories.Add(new CatalogCategory
+            {
+                Slug = slug, Name = name, Level = 0, SortOrder = sort, IsActive = true,
+            });
+        }
+
+        // Flush parents so child FKs resolve.
+        await db.SaveChangesAsync(ct);
+        existing = await db.CatalogCategories.ToDictionaryAsync(c => c.Slug, ct);
+
+        foreach (var (slug, name, parentSlug, sort) in DefaultCatalogCategories.Where(c => c.ParentSlug is not null))
+        {
+            if (existing.ContainsKey(slug)) continue;
+            if (!existing.TryGetValue(parentSlug!, out var parent)) continue;
+            db.CatalogCategories.Add(new CatalogCategory
+            {
+                Slug = slug, Name = name, ParentCategoryId = parent.Id,
+                Level = parent.Level + 1, SortOrder = sort, IsActive = true,
+            });
         }
     }
 

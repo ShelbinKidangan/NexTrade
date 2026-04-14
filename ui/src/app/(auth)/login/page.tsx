@@ -2,15 +2,61 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Eye, EyeOff, Search, Sparkles, BadgeCheck, Star } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Search, Sparkles, BadgeCheck, Star, ShoppingCart, Factory } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { authApi, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
-const DEMO_EMAIL = "demo@nextrade.app";
-const DEMO_PASSWORD = "demo1234";
+const DEMO_PASSWORD = "Demo123!";
+
+type DemoRole = "buyer" | "supplier";
+type DemoAccount = {
+  email: string;
+  name: string;
+  business: string;
+  role: DemoRole;
+  blurb: string;
+};
+
+const DEMO_ACCOUNTS: DemoAccount[] = [
+  {
+    email: "maya@buyerco.demo",
+    name: "Maya Patel",
+    business: "BuyerCo Global Inc",
+    role: "buyer",
+    blurb: "Automotive buyer · Detroit, US",
+  },
+  {
+    email: "sasha@precision.demo",
+    name: "Sasha Kumar",
+    business: "Precision Industries Ltd",
+    role: "supplier",
+    blurb: "CNC machining · Pune, IN",
+  },
+  {
+    email: "erik@nordic.demo",
+    name: "Erik Lindqvist",
+    business: "Nordic Electronics AB",
+    role: "supplier",
+    blurb: "PCB & IoT · Stockholm, SE",
+  },
+  {
+    email: "linh@pacific.demo",
+    name: "Linh Nguyen",
+    business: "Pacific Packaging Co",
+    role: "supplier",
+    blurb: "Flexible packaging · Ho Chi Minh, VN",
+  },
+  {
+    email: "klaus@greenchem.demo",
+    name: "Klaus Becker",
+    business: "GreenChem Solutions GmbH",
+    role: "supplier",
+    blurb: "Specialty chemicals · Hamburg, DE",
+  },
+];
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -18,6 +64,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [quickLoginEmail, setQuickLoginEmail] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
 
@@ -34,9 +81,16 @@ export default function LoginPage() {
     }
   }
 
-  function fillDemo() {
-    setEmail(DEMO_EMAIL);
-    setPassword(DEMO_PASSWORD);
+  async function quickLogin(account: DemoAccount) {
+    setError("");
+    setQuickLoginEmail(account.email);
+    try {
+      const res = await authApi.login({ email: account.email, password: DEMO_PASSWORD });
+      login(res.token, res.user, res.business);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Demo sign-in failed. Has the seed run?");
+      setQuickLoginEmail(null);
+    }
   }
 
   return (
@@ -65,21 +119,44 @@ export default function LoginPage() {
               Sign in to your NexTrade business account
             </p>
 
-            <div className="mt-6 rounded-lg border border-dashed border-accent/40 bg-accent-subtle/40 p-3 flex items-start gap-2">
-              <Sparkles className="size-4 text-accent shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium">Try the demo account</p>
-                <p className="text-[11px] text-foreground-secondary font-mono truncate">
-                  {DEMO_EMAIL} · {DEMO_PASSWORD}
-                </p>
+            <div className="mt-6 rounded-lg border border-dashed border-accent/40 bg-accent-subtle/40 p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="size-4 text-accent shrink-0" />
+                <p className="text-xs font-medium flex-1">Quick-login as a demo user</p>
+                <span className="text-[10px] text-foreground-tertiary font-mono">{DEMO_PASSWORD}</span>
               </div>
-              <button
-                onClick={fillDemo}
-                type="button"
-                className="text-[11px] font-medium text-accent hover:underline shrink-0"
-              >
-                Use demo
-              </button>
+              <div className="space-y-1">
+                {DEMO_ACCOUNTS.map((acc) => {
+                  const isBuyer = acc.role === "buyer";
+                  const Icon = isBuyer ? ShoppingCart : Factory;
+                  const busy = quickLoginEmail === acc.email;
+                  return (
+                    <button
+                      key={acc.email}
+                      type="button"
+                      disabled={quickLoginEmail !== null}
+                      onClick={() => quickLogin(acc)}
+                      className="w-full flex items-center gap-2 rounded-md border border-border bg-background/70 px-2 py-1.5 text-left hover:border-accent/60 hover:bg-background disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <div className={`flex size-7 items-center justify-center rounded-md shrink-0 ${isBuyer ? "bg-accent text-white" : "bg-background-secondary text-foreground-secondary"}`}>
+                        <Icon className="size-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-medium truncate">{acc.business}</span>
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 shrink-0">
+                            {isBuyer ? "Buyer" : "Supplier"}
+                          </Badge>
+                        </div>
+                        <div className="text-[10px] text-foreground-tertiary truncate">{acc.blurb}</div>
+                      </div>
+                      <span className="text-[10px] font-medium text-accent shrink-0">
+                        {busy ? "…" : "Sign in"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 mt-5">

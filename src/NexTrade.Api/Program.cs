@@ -111,12 +111,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Auto-migrate + seed on startup in Development. Aspire spins up dynamic Postgres
-// ports per-run, so running `dotnet ef database update` manually is impractical.
-if (app.Environment.IsDevelopment())
-{
-    await DbInitializer.InitializeAsync(app.Services);
-}
+// Auto-migrate + seed reference data + platform admin on startup. Idempotent —
+// safe to run in any environment. Demo data is gated separately inside the seeder.
+await DbInitializer.InitializeAsync(app.Services);
 
 // Middleware pipeline
 app.UseMiddleware<ExceptionMiddleware>();

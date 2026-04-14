@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { discoveryApi } from "@/lib/api";
-import type { DiscoverBusinessDto, DiscoverItemDto, PagedResult } from "@/lib/types";
+import { categoriesApi, discoveryApi } from "@/lib/api";
+import type { CategoryDto, DiscoverBusinessDto, DiscoverItemDto, PagedResult } from "@/lib/types";
 
 type Tab = "items" | "businesses";
 
@@ -18,6 +18,8 @@ export default function DiscoverPage() {
   const [tab, setTab] = useState<Tab>("items");
   const [search, setSearch] = useState("");
   const [country, setCountry] = useState("");
+  const [categoryUid, setCategoryUid] = useState("");
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [page, setPage] = useState(1);
   const [itemsResult, setItemsResult] = useState<PagedResult<DiscoverItemDto> | null>(null);
   const [bizResult, setBizResult] = useState<PagedResult<DiscoverBusinessDto> | null>(null);
@@ -25,7 +27,11 @@ export default function DiscoverPage() {
   const [error, setError] = useState<string | null>(null);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
-  useEffect(() => { setPage(1); }, [tab, search, verifiedOnly, country]);
+  useEffect(() => {
+    categoriesApi.list().then(setCategories).catch(() => setCategories([]));
+  }, []);
+
+  useEffect(() => { setPage(1); }, [tab, search, verifiedOnly, country, categoryUid]);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +43,7 @@ export default function DiscoverPage() {
           const r = await discoveryApi.items({
             search: search || undefined,
             country: country || undefined,
+            categoryUid: categoryUid || undefined,
             page,
             pageSize: PAGE_SIZE,
           });
@@ -59,7 +66,7 @@ export default function DiscoverPage() {
     };
     void run();
     return () => { cancelled = true; };
-  }, [tab, search, verifiedOnly, country, page]);
+  }, [tab, search, verifiedOnly, country, categoryUid, page]);
 
   const activeResult = tab === "items" ? itemsResult : bizResult;
 
@@ -99,6 +106,20 @@ export default function DiscoverPage() {
             className="pl-8 h-9 text-sm"
           />
         </div>
+        {tab === "items" && (
+          <select
+            value={categoryUid}
+            onChange={(e) => setCategoryUid(e.target.value)}
+            className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c.uid} value={c.uid}>
+                {"— ".repeat(c.level)}{c.name}
+              </option>
+            ))}
+          </select>
+        )}
         <Input
           value={country}
           onChange={(e) => setCountry(e.target.value.toUpperCase())}

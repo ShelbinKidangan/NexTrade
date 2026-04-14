@@ -84,6 +84,8 @@ services:
       Email__FromAddress: ${EMAIL_FROM:-noreply@nextrade.io}
       Email__Smtp__Host: mailhog
       Email__Smtp__Port: 1025
+      # Full stack is the demo target — seed the showcase businesses on first run.
+      Seed__DemoData: ${SEED_DEMO_DATA:-true}
     ports:
       - "8080:8080"
 
