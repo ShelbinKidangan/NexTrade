@@ -47,6 +47,10 @@ public static class DependencyInjection
         services.AddScoped<RfqService>();
         services.AddScoped<QuoteService>();
         services.AddScoped<DealConfirmationsService>();
+        services.AddScoped<ConversationService>();
+        services.AddScoped<ComplianceService>();
+        services.AddScoped<ReviewsService>();
+        services.AddScoped<TrustScoreService>();
 
         // Email (Mailhog in dev)
         services.AddScoped<IEmailSender, SmtpEmailSender>();

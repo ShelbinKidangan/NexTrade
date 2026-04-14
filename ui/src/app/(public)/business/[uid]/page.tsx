@@ -9,14 +9,23 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { connectionsApi, discoveryApi, savedSuppliersApi, session } from "@/lib/api";
-import type { FollowStatusDto, PublicBusinessProfileDto, SavedSupplierDto } from "@/lib/types";
+import { connectionsApi, conversationsApi, discoveryApi, reviewsApi, savedSuppliersApi, session, trustScoreApi } from "@/lib/api";
+import { TrustScorePill } from "@/components/app/trust-score-pill";
+import { useRouter } from "next/navigation";
+import type {
+  FollowStatusDto, PublicBusinessProfileDto, SavedSupplierDto,
+  ReviewDto, TrustScoreBreakdown,
+} from "@/lib/types";
+import { MessageSquare, Star } from "lucide-react";
 
 export default function PublicBusinessPage({ params }: { params: Promise<{ uid: string }> }) {
   const { uid } = use(params);
+  const router = useRouter();
   const [profile, setProfile] = useState<PublicBusinessProfileDto | null>(null);
   const [follow, setFollow] = useState<FollowStatusDto | null>(null);
   const [savedEntry, setSavedEntry] = useState<SavedSupplierDto | null>(null);
+  const [reviews, setReviews] = useState<ReviewDto[]>([]);
+  const [trust, setTrust] = useState<TrustScoreBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const authed = typeof window !== "undefined" && session.hasTenant();
@@ -24,12 +33,16 @@ export default function PublicBusinessPage({ params }: { params: Promise<{ uid: 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const [p, f] = await Promise.all([
+      const [p, f, r, t] = await Promise.all([
         discoveryApi.publicProfile(uid),
         connectionsApi.followStatus(uid),
+        reviewsApi.forBusiness(uid, 1, 10).catch(() => null),
+        trustScoreApi.get(uid).catch(() => null),
       ]);
       setProfile(p);
       setFollow(f);
+      setReviews(r?.items ?? []);
+      setTrust(t);
       if (authed) {
         try {
           const saved = await savedSuppliersApi.list();
@@ -58,6 +71,18 @@ export default function PublicBusinessPage({ params }: { params: Promise<{ uid: 
       await connectionsApi.follow(uid);
     }
     setFollow(await connectionsApi.followStatus(uid));
+  }
+
+  async function messageSupplier() {
+    if (!authed) {
+      window.location.href = "/login";
+      return;
+    }
+    const conv = await conversationsApi.findOrCreate({
+      counterpartyBusinessUid: uid,
+      context: "General",
+    });
+    router.push(`/messages?conversation=${conv.uid}`);
   }
 
   async function toggleSave() {
@@ -128,9 +153,12 @@ export default function PublicBusinessPage({ params }: { params: Promise<{ uid: 
                 <p className="text-sm text-foreground-secondary mt-3 max-w-2xl">{profile.about}</p>
               )}
 
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-2 mt-4 flex-wrap">
                 <Button size="sm" variant={follow?.isFollowing ? "outline" : "default"} onClick={toggleFollow}>
                   {follow?.isFollowing ? "Following" : "Follow"}
+                </Button>
+                <Button size="sm" variant="outline" onClick={messageSupplier}>
+                  <MessageSquare className="size-4" /> Message
                 </Button>
                 <Button size="sm" variant="outline" onClick={toggleSave}>
                   {savedEntry ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
@@ -141,13 +169,18 @@ export default function PublicBusinessPage({ params }: { params: Promise<{ uid: 
                 </span>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-1">
-              <div className="text-sm font-medium">Trust Score</div>
-              <div className="text-lg font-bold">{profile.trustScore.toFixed(1)}</div>
+            <div className="flex flex-col items-end gap-2">
+              <TrustScorePill score={trust?.total ?? profile.trustScore} verified={profile.isVerified} size="md" />
               <Badge variant={profile.hasComplianceDocs ? "success" : "outline"} className="gap-1">
                 <ShieldCheck className="size-3" />
                 {profile.hasComplianceDocs ? "Compliance verified" : "Compliance pending"}
               </Badge>
+              {trust && (
+                <div className="text-[10px] text-foreground-tertiary text-right leading-tight">
+                  {trust.reviewCount} review{trust.reviewCount === 1 ? "" : "s"}<br />
+                  {trust.complianceVerifiedCount}/{trust.complianceTotalCount} docs verified
+                </div>
+              )}
             </div>
           </div>
 
@@ -163,6 +196,48 @@ export default function PublicBusinessPage({ params }: { params: Promise<{ uid: 
           )}
         </CardContent>
       </Card>
+
+      {reviews.length > 0 && (
+        <div>
+          <h2 className="text-base font-semibold mb-2">Reviews ({reviews.length})</h2>
+          <div className="space-y-3">
+            {reviews.map((r) => (
+              <Card key={r.uid}>
+                <CardContent className="pt-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{r.reviewerBusinessName}</span>
+                        {r.isVerifiedDeal && (
+                          <Badge variant="success" className="gap-1 text-[10px]">
+                            <BadgeCheck className="size-3" /> Verified deal
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-0.5 mt-1">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            className={`size-3 ${
+                              n <= r.overallRating ? "fill-warning text-warning" : "text-foreground-tertiary"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      {r.comment && (
+                        <p className="text-xs text-foreground-secondary mt-2">{r.comment}</p>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-foreground-tertiary">
+                      {new Date(r.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <h2 className="text-base font-semibold mb-2">Published items ({profile.publishedItemCount})</h2>

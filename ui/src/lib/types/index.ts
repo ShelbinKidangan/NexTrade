@@ -451,3 +451,110 @@ export interface CreateStandaloneDealRequest {
   dealValue?: number;
   currencyCode?: string;
 }
+
+// Messaging
+export interface ConversationParticipantDto {
+  businessUid: string;
+  businessName: string;
+  isVerified: boolean;
+}
+
+export interface MessageDto {
+  id: number;
+  conversationUid: string;
+  senderUserId: number;
+  senderBusinessUid: string;
+  senderBusinessName: string;
+  content: string;
+  attachments: string[];
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface ConversationDto {
+  uid: string;
+  context: "General" | "Rfq";
+  contextRefUid: string | null;
+  contextRefTitle: string | null;
+  participants: ConversationParticipantDto[];
+  lastMessage: MessageDto | null;
+  unreadCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FindOrCreateConversationRequest {
+  counterpartyBusinessUid: string;
+  context: "General" | "Rfq";
+  contextRefUid?: string;
+}
+
+// Compliance
+export interface ComplianceDocumentDto {
+  uid: string;
+  type: string;
+  title: string;
+  description: string | null;
+  fileUrl: string;
+  fileName: string;
+  issuingBody: string | null;
+  issueDate: string | null;
+  expiryDate: string | null;
+  status: "Pending" | "Verified" | "Rejected" | "Expired";
+  rejectionReason: string | null;
+  verifiedAt: string | null;
+  visibility: "Private" | "SharedOnRequest" | "Public";
+  createdAt: string;
+}
+
+export interface CreateComplianceDocumentMetadata {
+  type: string;
+  title: string;
+  description?: string;
+  issuingBody?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  visibility: "Private" | "SharedOnRequest" | "Public";
+}
+
+// Reviews
+export interface ReviewDto {
+  uid: string;
+  reviewerBusinessUid: string;
+  reviewerBusinessName: string;
+  reviewedBusinessUid: string;
+  dealConfirmationUid: string;
+  overallRating: number;
+  qualityRating: number | null;
+  communicationRating: number | null;
+  deliveryRating: number | null;
+  valueRating: number | null;
+  comment: string | null;
+  isVerifiedDeal: boolean;
+  createdAt: string;
+}
+
+export interface CreateReviewRequest {
+  dealConfirmationUid: string;
+  overallRating: number;
+  qualityRating?: number;
+  communicationRating?: number;
+  deliveryRating?: number;
+  valueRating?: number;
+  comment?: string;
+}
+
+// Trust score
+export interface TrustScoreBreakdown {
+  total: number;
+  reviewScore: number;
+  reviewCount: number;
+  complianceScore: number;
+  complianceVerifiedCount: number;
+  complianceTotalCount: number;
+  responseScore: number;
+  rfqQuotedCount: number;
+  rfqInvitedCount: number;
+  recencyScore: number;
+  lastActivityAt: string | null;
+}

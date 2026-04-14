@@ -24,12 +24,14 @@ public class Message : ChildEntity
 {
     public long ConversationId { get; set; }
     public long SenderUserId { get; set; }
+    public Guid SenderBusinessUid { get; set; }
     public string Content { get; set; } = string.Empty;
 
     /// <summary>JSONB list of attachment blob URLs.</summary>
     public List<string> Attachments { get; set; } = [];
 
     public DateTime? ReadAt { get; set; }
+    public DateTime? DeletedAt { get; set; }
 
     // Navigation
     public Conversation Conversation { get; set; } = null!;

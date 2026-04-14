@@ -164,7 +164,12 @@ import type {
   RfqDto, RfqDetailDto, CreateRfqRequest,
   QuoteDto, CreateQuoteRequest, ComparisonDto,
   DealConfirmationDto, CreateStandaloneDealRequest,
+  ConversationDto, MessageDto, FindOrCreateConversationRequest,
+  ComplianceDocumentDto, CreateComplianceDocumentMetadata,
+  ReviewDto, CreateReviewRequest, TrustScoreBreakdown,
 } from "@/lib/types";
+
+export const API_BASE_URL = API_BASE;
 
 function qs(params: Record<string, string | number | boolean | undefined | null>): string {
   const p = new URLSearchParams();
@@ -345,6 +350,65 @@ export const quotesApi = {
     apiFetch<void>(`/api/rfqs/${rfqUid}/award`, {
       method: "POST", body: JSON.stringify({ quoteUid }),
     }),
+};
+
+export const conversationsApi = {
+  list: () =>
+    apiFetch<PagedResult<ConversationDto>>("/api/conversations"),
+  get: (uid: string) =>
+    apiFetch<ConversationDto>(`/api/conversations/${uid}`),
+  messages: (uid: string, page = 1, pageSize = 50) =>
+    apiFetch<PagedResult<MessageDto>>(`/api/conversations/${uid}/messages?page=${page}&pageSize=${pageSize}`),
+  send: (uid: string, content: string, attachments: string[] = []) =>
+    apiFetch<MessageDto>(`/api/conversations/${uid}/messages`, {
+      method: "POST", body: JSON.stringify({ content, attachments }),
+    }),
+  read: (uid: string, messageId: number) =>
+    apiFetch<void>(`/api/conversations/${uid}/read`, {
+      method: "POST", body: JSON.stringify({ messageId }),
+    }),
+  findOrCreate: (data: FindOrCreateConversationRequest) =>
+    apiFetch<ConversationDto>("/api/conversations/find-or-create", {
+      method: "POST", body: JSON.stringify(data),
+    }),
+};
+
+export const complianceApi = {
+  list: () => apiFetch<ComplianceDocumentDto[]>("/api/compliance/documents"),
+  get: (uid: string) => apiFetch<ComplianceDocumentDto>(`/api/compliance/documents/${uid}`),
+  upload: (file: File, metadata: CreateComplianceDocumentMetadata) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("metadata", JSON.stringify(metadata));
+    return apiUpload<ComplianceDocumentDto>("/api/compliance/documents", fd);
+  },
+  remove: (uid: string) =>
+    apiFetch<void>(`/api/compliance/documents/${uid}`, { method: "DELETE" }),
+  verify: (uid: string) =>
+    apiFetch<void>(`/api/compliance/documents/${uid}/verify`, {
+      method: "POST", auth: "admin",
+    }),
+  reject: (uid: string, reason: string) =>
+    apiFetch<void>(`/api/compliance/documents/${uid}/reject`, {
+      method: "POST", body: JSON.stringify({ reason }), auth: "admin",
+    }),
+};
+
+export const reviewsApi = {
+  create: (data: CreateReviewRequest) =>
+    apiFetch<ReviewDto>("/api/reviews", { method: "POST", body: JSON.stringify(data) }),
+  forBusiness: (uid: string, page = 1, pageSize = 20) =>
+    apiFetch<PagedResult<ReviewDto>>(`/api/businesses/${uid}/reviews?page=${page}&pageSize=${pageSize}`, { auth: "none" }),
+};
+
+export const trustScoreApi = {
+  get: (uid: string) =>
+    apiFetch<TrustScoreBreakdown>(`/api/businesses/${uid}/trust-score`, { auth: "none" }),
+  recompute: (uid: string) =>
+    apiFetch<{ uid: string; trustScore: number }>(
+      `/api/businesses/${uid}/trust-score/recompute`,
+      { method: "POST", auth: "admin" }
+    ),
 };
 
 export const dealConfirmationsApi = {

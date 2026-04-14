@@ -179,10 +179,24 @@ public class AppDbContext(
         {
             e.HasIndex(c => c.ConversationKey).IsUnique();
             e.Property(c => c.ParticipantBusinessUids).HasColumnType("jsonb");
+            e.HasMany(c => c.Messages).WithOne(m => m.Conversation).HasForeignKey(m => m.ConversationId);
         });
         builder.Entity<Message>(e =>
         {
             e.Property(m => m.Attachments).HasColumnType("jsonb");
+            e.HasIndex(m => new { m.ConversationId, m.CreatedAt });
+        });
+
+        // Compliance
+        builder.Entity<ComplianceDocument>(e =>
+        {
+            e.HasIndex(d => new { d.TenantId, d.Status, d.ExpiryDate });
+        });
+
+        // Reviews
+        builder.Entity<Review>(e =>
+        {
+            e.HasIndex(r => new { r.ReviewedBusinessUid, r.CreatedAt });
         });
 
         // Industry

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { BadgeCheck, Star, MapPin } from "lucide-react";
+import { BadgeCheck, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TrustScorePill } from "@/components/app/trust-score-pill";
 import type { BusinessDto } from "@/lib/types";
 
 export function BusinessCard({ business }: { business: BusinessDto }) {
@@ -37,19 +38,14 @@ export function BusinessCard({ business }: { business: BusinessDto }) {
       )}
 
       {/* Meta */}
-      <div className="flex items-center gap-3 text-xs text-foreground-tertiary mb-3">
+      <div className="flex items-center gap-2 text-xs text-foreground-tertiary mb-3 flex-wrap">
         {business.city && (
           <span className="flex items-center gap-1">
             <MapPin className="size-3" />
             {business.city}{business.countryCode ? `, ${business.countryCode}` : ""}
           </span>
         )}
-        {business.trustScore > 0 && (
-          <span className="flex items-center gap-1">
-            <Star className="size-3 fill-warning text-warning" />
-            {business.trustScore.toFixed(1)}
-          </span>
-        )}
+        <TrustScorePill score={business.trustScore} size="xs" />
       </div>
 
       {/* Capabilities */}

@@ -7,8 +7,22 @@ namespace NexTrade.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class BusinessesController(BusinessService service) : ControllerBase
+public class BusinessesController(BusinessService service, TrustScoreService trustScore) : ControllerBase
 {
+    [HttpPost("{uid:guid}/trust-score/recompute")]
+    [Authorize(Policy = "PlatformAdmin")]
+    public async Task<ActionResult> RecomputeTrust(Guid uid, CancellationToken ct)
+    {
+        var score = await trustScore.RecomputeOneAsync(uid, ct);
+        return Ok(new { uid, trustScore = score });
+    }
+
+    [HttpGet("{uid:guid}/trust-score")]
+    [AllowAnonymous]
+    public async Task<ActionResult> GetTrustBreakdown(Guid uid, CancellationToken ct)
+        => Ok(await trustScore.ComputeAsync(uid, ct));
+
+
     [HttpGet("discover")]
     [AllowAnonymous]
     public async Task<ActionResult> Discover([FromQuery] BusinessService.BusinessFilter filter, CancellationToken ct)

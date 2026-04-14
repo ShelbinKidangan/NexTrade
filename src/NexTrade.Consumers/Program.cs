@@ -18,5 +18,9 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
+// Scheduled background jobs
+builder.Services.AddHostedService<TrustScoreRecomputeConsumer>();
+builder.Services.AddHostedService<ComplianceExpiryConsumer>();
+
 var host = builder.Build();
 host.Run();

@@ -1,25 +1,127 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search, Send, Paperclip, Smile, BadgeCheck } from "lucide-react";
-import { mockConversations, timeAgo } from "@/lib/mock-data";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Search, Send, BadgeCheck } from "lucide-react";
+import { conversationsApi } from "@/lib/api";
+import { ensureChatConnected, joinConversation, leaveConversation } from "@/lib/signalr";
+import { useAuth } from "@/lib/auth";
+import type { ConversationDto, MessageDto } from "@/lib/types";
 
 export default function MessagesPage() {
-  const [activeUid, setActiveUid] = useState(mockConversations[0]?.uid);
+  const { business } = useAuth();
+  const [conversations, setConversations] = useState<ConversationDto[]>([]);
+  const [activeUid, setActiveUid] = useState<string | null>(null);
+  const [messages, setMessages] = useState<MessageDto[]>([]);
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const conversations = useMemo(() => {
+  // Initial conversations fetch
+  useEffect(() => {
+    conversationsApi
+      .list()
+      .then((p) => {
+        setConversations(p.items);
+        if (p.items.length > 0 && !activeUid) setActiveUid(p.items[0].uid);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load messages + SignalR wiring whenever active conversation changes
+  useEffect(() => {
+    if (!activeUid) return;
+    let cancelled = false;
+
+    conversationsApi.messages(activeUid).then((p) => {
+      if (cancelled) return;
+      // API returns newest-first; reverse for display
+      setMessages([...p.items].reverse());
+    });
+
+    let connectedUid = activeUid;
+    let unsubReceived: (() => void) | null = null;
+    let unsubRead: (() => void) | null = null;
+
+    (async () => {
+      try {
+        const conn = await ensureChatConnected();
+        await joinConversation(activeUid);
+
+        const onReceived = (msg: MessageDto) => {
+          if (msg.conversationUid !== activeUid) return;
+          setMessages((prev) =>
+            prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]
+          );
+        };
+        const onRead = (payload: { conversationUid: string; upToMessageId: number }) => {
+          if (payload.conversationUid !== activeUid) return;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id <= payload.upToMessageId && !m.readAt
+                ? { ...m, readAt: new Date().toISOString() }
+                : m
+            )
+          );
+        };
+
+        conn.on("messageReceived", onReceived);
+        conn.on("messageRead", onRead);
+        unsubReceived = () => conn.off("messageReceived", onReceived);
+        unsubRead = () => conn.off("messageRead", onRead);
+      } catch {
+        // SignalR unavailable — page still works with manual refresh
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      unsubReceived?.();
+      unsubRead?.();
+      leaveConversation(connectedUid).catch(() => {});
+    };
+  }, [activeUid]);
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages.length]);
+
+  // Mark read when viewing
+  useEffect(() => {
+    if (!activeUid || messages.length === 0) return;
+    const lastFromOther = [...messages].reverse().find((m) => m.senderBusinessUid !== business?.uid);
+    if (!lastFromOther || lastFromOther.readAt) return;
+    conversationsApi.read(activeUid, lastFromOther.id).catch(() => {});
+  }, [activeUid, messages, business?.uid]);
+
+  const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return mockConversations;
-    return mockConversations.filter(
-      (c) =>
-        c.businessName.toLowerCase().includes(q) ||
-        c.lastMessage.toLowerCase().includes(q)
+    if (!q) return conversations;
+    return conversations.filter((c) =>
+      c.participants.some((p) => p.businessName.toLowerCase().includes(q))
+      || (c.lastMessage?.content.toLowerCase().includes(q) ?? false)
     );
-  }, [search]);
+  }, [conversations, search]);
 
-  const active = mockConversations.find((c) => c.uid === activeUid);
+  const active = conversations.find((c) => c.uid === activeUid);
+  const other = active?.participants.find((p) => p.businessUid !== business?.uid);
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!activeUid || !draft.trim() || sending) return;
+    setSending(true);
+    try {
+      const msg = await conversationsApi.send(activeUid, draft);
+      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+      setDraft("");
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <div className="flex h-[calc(100vh-8rem)] rounded-xl border border-border overflow-hidden">
@@ -38,51 +140,44 @@ export default function MessagesPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
+          {loading ? (
+            <p className="p-4 text-xs text-foreground-tertiary">Loading…</p>
+          ) : filtered.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-xs text-foreground-tertiary">No conversations</p>
             </div>
           ) : (
             <ul>
-              {conversations.map((c) => {
+              {filtered.map((c) => {
+                const counterpart = c.participants.find((p) => p.businessUid !== business?.uid);
                 const isActive = c.uid === activeUid;
                 return (
                   <li key={c.uid}>
                     <button
                       onClick={() => setActiveUid(c.uid)}
-                      className={`w-full text-left px-3 py-3 border-b border-border transition-colors ${
-                        isActive ? "bg-background-secondary" : "hover:bg-background-secondary/60"
+                      className={`w-full text-left px-3 py-2 border-b border-border hover:bg-background-secondary ${
+                        isActive ? "bg-background-secondary" : ""
                       }`}
                     >
-                      <div className="flex items-start gap-2.5">
-                        <div className="relative shrink-0">
-                          <div className="flex size-9 items-center justify-center rounded-full bg-accent-subtle text-accent text-sm font-medium">
-                            {c.businessName.charAt(0)}
-                          </div>
-                          {c.online && (
-                            <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-success border-2 border-background" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-sm font-medium truncate">{c.businessName}</span>
-                            <span className="text-[10px] text-foreground-tertiary shrink-0">
-                              {timeAgo(c.lastMessageAt)}
-                            </span>
-                          </div>
-                          <div className="text-[11px] text-foreground-tertiary truncate">{c.context}</div>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <p className="text-xs text-foreground-secondary truncate flex-1">
-                              {c.lastMessage}
-                            </p>
-                            {c.unread > 0 && (
-                              <span className="shrink-0 size-4 rounded-full bg-accent text-white text-[10px] font-semibold flex items-center justify-center">
-                                {c.unread}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium truncate flex-1">
+                          {counterpart?.businessName ?? "—"}
+                        </span>
+                        {counterpart?.isVerified && <BadgeCheck className="size-3.5 text-accent" />}
+                        {c.unreadCount > 0 && (
+                          <span className="text-[10px] bg-accent text-white px-1.5 py-0.5 rounded-full">
+                            {c.unreadCount}
+                          </span>
+                        )}
                       </div>
+                      <p className="text-xs text-foreground-secondary truncate mt-1">
+                        {c.lastMessage?.content ?? "—"}
+                      </p>
+                      {c.contextRefTitle && (
+                        <p className="text-[10px] text-foreground-tertiary mt-0.5 truncate">
+                          RFQ: {c.contextRefTitle}
+                        </p>
+                      )}
                     </button>
                   </li>
                 );
@@ -92,86 +187,65 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* Chat area */}
-      {active ? (
-        <div className="flex-1 flex flex-col bg-background">
-          {/* Header */}
-          <div className="h-14 border-b border-border px-4 flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-full bg-accent-subtle text-accent text-sm font-medium">
-              {active.businessName.charAt(0)}
+      {/* Thread */}
+      <div className="flex-1 flex flex-col bg-background">
+        {active ? (
+          <>
+            <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+              <span className="text-sm font-medium">{other?.businessName ?? "—"}</span>
+              {other?.isVerified && <BadgeCheck className="size-3.5 text-accent" />}
+              {active.contextRefTitle && (
+                <span className="text-xs text-foreground-tertiary">· RFQ: {active.contextRefTitle}</span>
+              )}
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-medium truncate">{active.businessName}</span>
-                <BadgeCheck className="size-3.5 text-accent shrink-0" />
-              </div>
-              <div className="text-[11px] text-foreground-tertiary">
-                {active.online ? "● Online" : "Offline"} · {active.context}
-              </div>
-            </div>
-          </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-background-secondary/30">
-            {active.messages.map((m) => {
-              const mine = m.sender === "me";
-              return (
-                <div key={m.uid} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-md ${mine ? "items-end" : "items-start"} flex flex-col`}>
-                    <div
-                      className={`rounded-2xl px-3.5 py-2 text-sm ${
-                        mine
-                          ? "bg-accent text-white rounded-br-sm"
-                          : "bg-background border border-border rounded-bl-sm"
-                      }`}
-                    >
-                      {m.content}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+              {messages.length === 0 ? (
+                <p className="text-xs text-foreground-tertiary text-center">No messages yet.</p>
+              ) : (
+                messages.map((m) => {
+                  const mine = m.senderBusinessUid === business?.uid;
+                  return (
+                    <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[70%] rounded-lg px-3 py-2 text-sm ${
+                          mine ? "bg-accent text-white" : "bg-background-secondary"
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap">{m.content}</p>
+                        <div className={`text-[10px] mt-1 ${mine ? "text-white/70" : "text-foreground-tertiary"}`}>
+                          {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          {mine && m.readAt && " · Read"}
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-[10px] text-foreground-tertiary mt-1 px-1">
-                      {new Date(m.sentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })
+              )}
+            </div>
 
-          {/* Composer */}
-          <div className="border-t border-border p-3">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setDraft("");
-              }}
-              className="flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-1"
-            >
-              <button type="button" className="p-1 text-foreground-tertiary hover:text-foreground">
-                <Paperclip className="size-4" />
-              </button>
+            <form onSubmit={handleSend} className="p-3 border-t border-border flex gap-2">
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-foreground-tertiary py-1.5"
+                placeholder="Type a message…"
+                className="flex-1 h-9 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring"
               />
-              <button type="button" className="p-1 text-foreground-tertiary hover:text-foreground">
-                <Smile className="size-4" />
-              </button>
               <button
                 type="submit"
-                disabled={!draft.trim()}
-                className="flex size-7 items-center justify-center rounded-md bg-accent text-white disabled:opacity-40"
+                disabled={!draft.trim() || sending}
+                className="h-9 px-3 rounded-md bg-accent text-white text-sm disabled:opacity-50 flex items-center gap-1"
               >
-                <Send className="size-3.5" />
+                <Send className="size-3.5" /> Send
               </button>
             </form>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-sm text-foreground-tertiary">Select a conversation</p>
           </div>
-        </div>
-      ) : (
-        <div className="flex-1 flex flex-col items-center justify-center bg-background-secondary">
-          <p className="text-sm text-foreground-secondary">Select a conversation</p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

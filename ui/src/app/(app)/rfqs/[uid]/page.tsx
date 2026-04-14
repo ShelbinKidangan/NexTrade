@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { rfqsApi, quotesApi, dealConfirmationsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { ReviewModal } from "@/components/app/review-modal";
 import type {
   RfqDetailDto, QuoteDto, CreateQuoteItemRequest, DealConfirmationDto,
 } from "@/lib/types";
@@ -30,9 +31,11 @@ export default function RfqDetailPage({ params }: { params: Promise<{ uid: strin
   const [rfq, setRfq] = useState<RfqDetailDto | null>(null);
   const [quotes, setQuotes] = useState<QuoteDto[]>([]);
   const [pendingDeal, setPendingDeal] = useState<DealConfirmationDto | null>(null);
+  const [confirmedDeal, setConfirmedDeal] = useState<DealConfirmationDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -43,10 +46,16 @@ export default function RfqDetailPage({ params }: { params: Promise<{ uid: strin
       setRfq(r);
       const q = await quotesApi.forRfq(uid);
       setQuotes(q);
-      // Pending deal referencing this RFQ (either side)
+      // Deals referencing this RFQ (either side)
       try {
-        const pending = await dealConfirmationsApi.pending();
+        const [pending, mine] = await Promise.all([
+          dealConfirmationsApi.pending(),
+          dealConfirmationsApi.mine(),
+        ]);
         setPendingDeal(pending.find((d) => d.rfqUid === uid) ?? null);
+        setConfirmedDeal(
+          mine.find((d) => d.rfqUid === uid && d.confirmedAt !== null) ?? null
+        );
       } catch {}
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load RFQ");
@@ -98,6 +107,23 @@ export default function RfqDetailPage({ params }: { params: Promise<{ uid: strin
           <ArrowLeft className="size-4" /> Back to RFQs
         </Button>
       </div>
+
+      {/* Review prompt (both sides confirmed) */}
+      {confirmedDeal && !pendingDeal && (
+        <Card className="bg-success/10 border-success/30">
+          <CardContent className="pt-4">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <h3 className="text-sm font-medium">Deal confirmed — leave a review</h3>
+                <p className="text-xs text-foreground-secondary mt-1">
+                  Share how the deal went. Your review contributes to the other party's trust score.
+                </p>
+              </div>
+              <Button size="sm" onClick={() => setShowReview(true)}>Leave review</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Deal confirmation banner */}
       {pendingDeal && (
@@ -277,6 +303,20 @@ export default function RfqDetailPage({ params }: { params: Promise<{ uid: strin
           onClose={() => setShowQuoteForm(false)}
           onSubmitted={() => {
             setShowQuoteForm(false);
+            load();
+          }}
+        />
+      )}
+
+      {showReview && confirmedDeal && (
+        <ReviewModal
+          dealConfirmationUid={confirmedDeal.uid}
+          counterpartyName={
+            isBuyer ? confirmedDeal.supplierBusinessName : confirmedDeal.buyerBusinessName
+          }
+          onClose={() => setShowReview(false)}
+          onSubmitted={() => {
+            setShowReview(false);
             load();
           }}
         />

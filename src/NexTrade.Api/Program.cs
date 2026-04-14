@@ -3,6 +3,7 @@ using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using NexTrade.Api.Hubs;
 using NexTrade.Api.Middleware;
 using NexTrade.Infrastructure;
 using NexTrade.Infrastructure.Data;
@@ -130,5 +131,6 @@ app.UseAuthorization();
 app.UseMiddleware<TenantMiddleware>();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
